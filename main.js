@@ -1740,6 +1740,185 @@ function createGeneratedSuperellipsePreset({ name, width, height, power, hue }) 
   };
 }
 
+
+function createGeneratedSpiralPreset({ name, turns, radius, curve = 1, shell = false, hue }) {
+  return {
+    name,
+    tag: shell ? "Generated Shell Spiral" : "Generated Spiral",
+    descriptionEn: `A generated ${shell ? "shell" : "spiral"} preset with ${turns} turns for directional loading motion.`,
+    descriptionZh: `生成式${shell ? "贝壳" : "螺旋"}预设，${turns} 圈轨迹带来有方向感的加载动效。`,
+    generated: true,
+    genSpiralTurns: turns,
+    genSpiralRadius: radius,
+    genSpiralCurve: curve,
+    genSpiralShell: shell,
+    hue,
+    hueRange: shell ? 150 : 120,
+    controls: [
+      { key: "genSpiralTurns", labelEn: "Turns", labelZh: "圈数", min: 1.2, max: 9, step: 0.1 },
+      { key: "genSpiralRadius", labelEn: "Radius", labelZh: "半径", min: 10, max: 38, step: 0.5 },
+      { key: "genSpiralCurve", labelEn: "Curve", labelZh: "曲率", min: 0.35, max: 2.6, step: 0.05 },
+    ],
+    formula(config) {
+      return [
+        `θ(t) = ${config.genSpiralTurns.toFixed(1)} · 2πt`,
+        `r(t) = ${config.genSpiralRadius.toFixed(1)} · t^${config.genSpiralCurve.toFixed(2)}`,
+        "x(t)=50+r cosθ, y(t)=50+r sinθ",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 88,
+    trailSpan: 0.5,
+    durationMs: 9800,
+    rotationDurationMs: 74000,
+    pulseDurationMs: 6400,
+    strokeWidth: 4.0,
+    point(progress, detailScale, config) {
+      const t = progress;
+      const theta = t * config.genSpiralTurns * Math.PI * 2;
+      const radius = (config.genSpiralRadius * (0.92 + detailScale * 0.16)) * (config.genSpiralShell ? Math.sin(theta) / (theta * 0.18 + 0.75) * 2.2 : t ** config.genSpiralCurve);
+      return {
+        x: 50 + radius * Math.cos(theta),
+        y: 50 + radius * Math.sin(theta),
+      };
+    },
+  };
+}
+
+function createGeneratedHeartPreset({ name, scale, squeeze = 1, beat = 1, hue }) {
+  return {
+    name,
+    tag: "Generated Heart",
+    descriptionEn: `A generated heart/cardioid-style preset with beat ${beat}, adding warmer public-facing loader options.`,
+    descriptionZh: `生成式心形 / cardioid 预设，beat=${beat}，加入更有温度的加载选项。`,
+    generated: true,
+    genHeartScale: scale,
+    genHeartSqueeze: squeeze,
+    genHeartBeat: beat,
+    hue,
+    hueRange: 80,
+    controls: [
+      { key: "genHeartScale", labelEn: "Scale", labelZh: "缩放", min: 0.7, max: 1.8, step: 0.01 },
+      { key: "genHeartSqueeze", labelEn: "Squeeze", labelZh: "压缩", min: 0.6, max: 1.4, step: 0.01 },
+      { key: "genHeartBeat", labelEn: "Beat", labelZh: "心跳", min: 0, max: 2.5, step: 0.05 },
+    ],
+    formula(config) {
+      return [
+        "x(t)=50+16s·sin³t",
+        "y(t)=50-s·(13cos t-5cos2t-2cos3t-cos4t)",
+        `s=${config.genHeartScale.toFixed(2)} + ${config.genHeartBeat.toFixed(2)} pulse`,
+      ].join("\n");
+    },
+    rotate: false,
+    particleCount: 86,
+    trailSpan: 0.42,
+    durationMs: 8200,
+    rotationDurationMs: 36000,
+    pulseDurationMs: 5200,
+    strokeWidth: 4.5,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const scale = config.genHeartScale + detailScale * config.genHeartBeat * 0.12;
+      return {
+        x: 50 + 16 * scale * Math.sin(t) ** 3,
+        y: 52 - scale * config.genHeartSqueeze * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)),
+      };
+    },
+  };
+}
+
+function createGeneratedFourierPreset({ name, a, b, c, d, hue }) {
+  return {
+    name,
+    tag: "Generated Fourier",
+    descriptionEn: `A generated Fourier-style preset blending ${a}, ${b}, ${c}, and ${d} harmonics into a braided orbit.`,
+    descriptionZh: `生成式 Fourier 风格预设，将 ${a}、${b}、${c}、${d} 次谐波编织成轨道。`,
+    generated: true,
+    genFourierA: a,
+    genFourierB: b,
+    genFourierC: c,
+    genFourierD: d,
+    genFourierScale: 18,
+    hue,
+    hueRange: 220,
+    controls: [
+      { key: "genFourierA", labelEn: "A", labelZh: "A", min: 1, max: 13, step: 1 },
+      { key: "genFourierB", labelEn: "B", labelZh: "B", min: 1, max: 13, step: 1 },
+      { key: "genFourierC", labelEn: "C", labelZh: "C", min: 1, max: 13, step: 1 },
+      { key: "genFourierD", labelEn: "D", labelZh: "D", min: 1, max: 13, step: 1 },
+      { key: "genFourierScale", labelEn: "Scale", labelZh: "缩放", min: 10, max: 28, step: 0.5 },
+    ],
+    formula(config) {
+      return [
+        "x(t)=50+s(sin At + 0.5sin Bt)",
+        "y(t)=50+s(cos Ct - 0.5cos Dt)",
+        `A=${Math.round(config.genFourierA)}, B=${Math.round(config.genFourierB)}, C=${Math.round(config.genFourierC)}, D=${Math.round(config.genFourierD)}`,
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 96,
+    trailSpan: 0.38,
+    durationMs: 10400,
+    rotationDurationMs: 82000,
+    pulseDurationMs: 7000,
+    strokeWidth: 4.0,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const scale = config.genFourierScale * (0.92 + detailScale * 0.16);
+      const x = Math.sin(Math.round(config.genFourierA) * t) + 0.5 * Math.sin(Math.round(config.genFourierB) * t);
+      const y = Math.cos(Math.round(config.genFourierC) * t) - 0.5 * Math.cos(Math.round(config.genFourierD) * t);
+      return {
+        x: 50 + x * scale,
+        y: 50 + y * scale,
+      };
+    },
+  };
+}
+
+function createGeneratedPolarPreset({ name, petals, wobble, radius, hue }) {
+  return {
+    name,
+    tag: "Generated Polar Wave",
+    descriptionEn: `A generated polar-wave preset combining ${petals} petals with wobble ${wobble}.`,
+    descriptionZh: `生成式极坐标波形预设，将 ${petals} 个花瓣与 ${wobble} 段扰动结合。`,
+    generated: true,
+    genPolarPetals: petals,
+    genPolarWobble: wobble,
+    genPolarRadius: radius,
+    genPolarPulse: 3,
+    hue,
+    hueRange: 160,
+    controls: [
+      { key: "genPolarPetals", labelEn: "Petals", labelZh: "花瓣", min: 2, max: 18, step: 1 },
+      { key: "genPolarWobble", labelEn: "Wobble", labelZh: "扰动", min: 1, max: 18, step: 1 },
+      { key: "genPolarRadius", labelEn: "Radius", labelZh: "半径", min: 10, max: 34, step: 0.5 },
+      { key: "genPolarPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 8, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `r(t)=R(0.7+0.3cos(${Math.round(config.genPolarPetals)}t)+0.18sin(${Math.round(config.genPolarWobble)}t))`,
+        "x(t)=50+r cos t, y(t)=50+r sin t",
+        "Generated preset: polar wave family",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 92,
+    trailSpan: 0.34,
+    durationMs: 9200,
+    rotationDurationMs: 76000,
+    pulseDurationMs: 6200,
+    strokeWidth: 4.2,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const radius = (config.genPolarRadius + detailScale * config.genPolarPulse) * (0.7 + 0.3 * Math.cos(Math.round(config.genPolarPetals) * t) + 0.18 * Math.sin(Math.round(config.genPolarWobble) * t));
+      return {
+        x: 50 + radius * Math.cos(t),
+        y: 50 + radius * Math.sin(t),
+      };
+    },
+  };
+}
+
 const generatedCurvePresets = [
   createGeneratedRosePreset({ name: "Rose Prime 7", k: 7, radius: 25, pulse: 2.8, phase: 0.04, hue: 315 }),
   createGeneratedRosePreset({ name: "Rose Prime 11", k: 11, radius: 23, pulse: 2.2, phase: 0.02, hue: 335 }),
@@ -1807,6 +1986,56 @@ const generatedCurvePresets = [
   createGeneratedSuperellipsePreset({ name: "Superellipse Orbit Wide", width: 32, height: 19, power: 4.6, hue: 228 }),
   createGeneratedSuperellipsePreset({ name: "Superellipse Soft Gem", width: 26, height: 30, power: 2.8, hue: 238 }),
   createGeneratedSuperellipsePreset({ name: "Superellipse Glow Box", width: 30, height: 24, power: 6.8, hue: 248 }),
+  createGeneratedSpiralPreset({ name: "Spiral Aurora 1", turns: 2.4, radius: 30, curve: 0.85, hue: 18 }),
+  createGeneratedSpiralPreset({ name: "Spiral Aurora 2", turns: 3.1, radius: 31, curve: 1.05, hue: 28 }),
+  createGeneratedSpiralPreset({ name: "Spiral Aurora 3", turns: 3.8, radius: 32, curve: 1.25, hue: 38 }),
+  createGeneratedSpiralPreset({ name: "Spiral Aurora 4", turns: 4.5, radius: 29, curve: 1.45, hue: 48 }),
+  createGeneratedSpiralPreset({ name: "Spiral Aurora 5", turns: 5.2, radius: 28, curve: 1.65, hue: 58 }),
+  createGeneratedSpiralPreset({ name: "Spiral Aurora 6", turns: 5.9, radius: 27, curve: 1.85, hue: 68 }),
+  createGeneratedSpiralPreset({ name: "Shell Spiral Pearl", turns: 2.6, radius: 32, curve: 1.1, shell: true, hue: 78 }),
+  createGeneratedSpiralPreset({ name: "Shell Spiral Tide", turns: 3.2, radius: 34, curve: 1.2, shell: true, hue: 88 }),
+  createGeneratedSpiralPreset({ name: "Shell Spiral Echo", turns: 3.8, radius: 33, curve: 1.35, shell: true, hue: 98 }),
+  createGeneratedSpiralPreset({ name: "Shell Spiral Signal", turns: 4.4, radius: 31, curve: 1.5, shell: true, hue: 108 }),
+  createGeneratedHeartPreset({ name: "Heart Ember", scale: 1.18, squeeze: 0.92, beat: 1.4, hue: 348 }),
+  createGeneratedHeartPreset({ name: "Heart Velvet", scale: 1.12, squeeze: 1.05, beat: 1.2, hue: 332 }),
+  createGeneratedHeartPreset({ name: "Heart Lantern", scale: 1.05, squeeze: 1.15, beat: 1.6, hue: 18 }),
+  createGeneratedHeartPreset({ name: "Heart Pulse Soft", scale: 1.0, squeeze: 0.9, beat: 1.9, hue: 358 }),
+  createGeneratedHeartPreset({ name: "Heart Orbit Warm", scale: 0.96, squeeze: 1.08, beat: 1.1, hue: 8 }),
+  createGeneratedHeartPreset({ name: "Heart Flame", scale: 1.22, squeeze: 0.98, beat: 1.7, hue: 24 }),
+  createGeneratedHeartPreset({ name: "Heart Neon", scale: 1.08, squeeze: 0.84, beat: 1.5, hue: 322 }),
+  createGeneratedHeartPreset({ name: "Heart Signal", scale: 1.14, squeeze: 1.2, beat: 1.3, hue: 342 }),
+  createGeneratedHeartPreset({ name: "Heart Bloom", scale: 1.0, squeeze: 1.0, beat: 2.0, hue: 352 }),
+  createGeneratedHeartPreset({ name: "Heart Halo", scale: 0.92, squeeze: 1.12, beat: 1.45, hue: 2 }),
+  createGeneratedFourierPreset({ name: "Fourier Braid 3-5", a: 3, b: 5, c: 4, d: 7, hue: 198 }),
+  createGeneratedFourierPreset({ name: "Fourier Braid 4-7", a: 4, b: 7, c: 5, d: 9, hue: 208 }),
+  createGeneratedFourierPreset({ name: "Fourier Braid 5-8", a: 5, b: 8, c: 3, d: 10, hue: 218 }),
+  createGeneratedFourierPreset({ name: "Fourier Braid 6-11", a: 6, b: 11, c: 7, d: 4, hue: 228 }),
+  createGeneratedFourierPreset({ name: "Fourier Braid 7-12", a: 7, b: 12, c: 5, d: 8, hue: 238 }),
+  createGeneratedFourierPreset({ name: "Fourier Braid 8-13", a: 8, b: 13, c: 6, d: 11, hue: 248 }),
+  createGeneratedFourierPreset({ name: "Fourier Orbit 2-9", a: 2, b: 9, c: 7, d: 5, hue: 258 }),
+  createGeneratedFourierPreset({ name: "Fourier Orbit 3-10", a: 3, b: 10, c: 8, d: 6, hue: 268 }),
+  createGeneratedFourierPreset({ name: "Fourier Orbit 4-11", a: 4, b: 11, c: 9, d: 7, hue: 278 }),
+  createGeneratedFourierPreset({ name: "Fourier Orbit 5-12", a: 5, b: 12, c: 10, d: 8, hue: 288 }),
+  createGeneratedPolarPreset({ name: "Polar Wave 5-8", petals: 5, wobble: 8, radius: 25, hue: 128 }),
+  createGeneratedPolarPreset({ name: "Polar Wave 6-10", petals: 6, wobble: 10, radius: 24, hue: 138 }),
+  createGeneratedPolarPreset({ name: "Polar Wave 7-11", petals: 7, wobble: 11, radius: 23, hue: 148 }),
+  createGeneratedPolarPreset({ name: "Polar Wave 8-13", petals: 8, wobble: 13, radius: 22, hue: 158 }),
+  createGeneratedPolarPreset({ name: "Polar Wave 9-14", petals: 9, wobble: 14, radius: 21, hue: 168 }),
+  createGeneratedPolarPreset({ name: "Polar Wave 10-15", petals: 10, wobble: 15, radius: 20, hue: 178 }),
+  createGeneratedPolarPreset({ name: "Polar Bloom 4-7", petals: 4, wobble: 7, radius: 27, hue: 188 }),
+  createGeneratedPolarPreset({ name: "Polar Bloom 6-9", petals: 6, wobble: 9, radius: 26, hue: 198 }),
+  createGeneratedPolarPreset({ name: "Polar Bloom 8-12", petals: 8, wobble: 12, radius: 25, hue: 208 }),
+  createGeneratedPolarPreset({ name: "Polar Bloom 12-17", petals: 12, wobble: 17, radius: 20, hue: 218 }),
+  createGeneratedSpiralPreset({ name: "Spiral Comet 7", turns: 6.6, radius: 28, curve: 1.15, hue: 118 }),
+  createGeneratedSpiralPreset({ name: "Spiral Comet 8", turns: 7.2, radius: 27, curve: 1.3, hue: 128 }),
+  createGeneratedSpiralPreset({ name: "Spiral Comet 9", turns: 7.8, radius: 26, curve: 1.45, hue: 138 }),
+  createGeneratedHeartPreset({ name: "Heart Aurora", scale: 1.16, squeeze: 0.88, beat: 2.1, hue: 312 }),
+  createGeneratedHeartPreset({ name: "Heart Crown", scale: 1.2, squeeze: 1.16, beat: 1.8, hue: 28 }),
+  createGeneratedFourierPreset({ name: "Fourier Halo 6-7", a: 6, b: 7, c: 8, d: 9, hue: 298 }),
+  createGeneratedFourierPreset({ name: "Fourier Halo 7-9", a: 7, b: 9, c: 10, d: 11, hue: 308 }),
+  createGeneratedPolarPreset({ name: "Polar Halo 14-5", petals: 14, wobble: 5, radius: 19, hue: 228 }),
+  createGeneratedPolarPreset({ name: "Polar Halo 16-7", petals: 16, wobble: 7, radius: 18, hue: 238 }),
+  createGeneratedPolarPreset({ name: "Polar Halo 18-9", petals: 18, wobble: 9, radius: 17, hue: 248 }),
 ];
 
 curves.push(...generatedCurvePresets);
