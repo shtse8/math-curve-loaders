@@ -1553,6 +1553,222 @@ const curves = [
 
 ];
 
+function createGeneratedRosePreset({ name, k, radius, pulse, phase = 0, hue }) {
+  return {
+    name,
+    tag: "Generated Rose",
+    descriptionEn: `A generated rose preset using k=${k}, tuned as part of the scalable expansion wave toward a much larger gallery.`,
+    descriptionZh: `生成式玫瑰曲线预设，k=${k}，作为图库扩展到更大规模的一组精选变体。`,
+    generated: true,
+    roseRadius: radius,
+    roseK: k,
+    rosePhase: phase,
+    rosePulse: pulse,
+    hue,
+    hueRange: 110,
+    controls: [
+      { key: "roseRadius", labelEn: "Radius", labelZh: "半径", min: 10, max: 36, step: 0.5 },
+      { key: "roseK", labelEn: "k", labelZh: "k 值", min: 2, max: 14, step: 1 },
+      { key: "rosePhase", labelEn: "Phase", labelZh: "相位", min: -1, max: 1, step: 0.01 },
+      { key: "rosePulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 8, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `r(t) = (${config.roseRadius.toFixed(1)} + ${config.rosePulse.toFixed(1)}s) cos(${Math.round(config.roseK)}(t + ${config.rosePhase.toFixed(2)}))`,
+        "x(t)=50+r cos t, y(t)=50+r sin t",
+        "Generated preset: rose family",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 88,
+    trailSpan: 0.34,
+    durationMs: 8200 + k * 180,
+    rotationDurationMs: 52000 + k * 1600,
+    pulseDurationMs: 5400,
+    strokeWidth: 4.2,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const radius = (config.roseRadius + detailScale * config.rosePulse) * Math.cos(Math.round(config.roseK) * (t + config.rosePhase));
+      return {
+        x: 50 + radius * Math.cos(t),
+        y: 50 + radius * Math.sin(t),
+      };
+    },
+  };
+}
+
+function createGeneratedLissajousPreset({ name, ax, by, delta, scaleX, scaleY, hue }) {
+  return {
+    name,
+    tag: "Generated Lissajous",
+    descriptionEn: `A generated Lissajous preset with ${ax}:${by} frequency coupling for smooth harmonic motion.`,
+    descriptionZh: `生成式 Lissajous 预设，使用 ${ax}:${by} 频率耦合，形成平滑的谐波运动。`,
+    generated: true,
+    lissA: ax,
+    lissB: by,
+    lissDelta: delta,
+    lissScaleX: scaleX,
+    lissScaleY: scaleY,
+    hue,
+    hueRange: 180,
+    controls: [
+      { key: "lissA", labelEn: "A freq", labelZh: "A 频率", min: 1, max: 9, step: 1 },
+      { key: "lissB", labelEn: "B freq", labelZh: "B 频率", min: 1, max: 9, step: 1 },
+      { key: "lissDelta", labelEn: "Phase", labelZh: "相位", min: 0, max: 6.28, step: 0.01 },
+      { key: "lissScaleX", labelEn: "Width", labelZh: "宽度", min: 12, max: 38, step: 0.5 },
+      { key: "lissScaleY", labelEn: "Height", labelZh: "高度", min: 12, max: 38, step: 0.5 },
+    ],
+    formula(config) {
+      return [
+        `x(t) = 50 + ${config.lissScaleX.toFixed(1)} sin(${Math.round(config.lissA)}t + ${config.lissDelta.toFixed(2)})`,
+        `y(t) = 50 + ${config.lissScaleY.toFixed(1)} sin(${Math.round(config.lissB)}t)`,
+        "Generated preset: Lissajous family",
+      ].join("\n");
+    },
+    rotate: false,
+    particleCount: 86,
+    trailSpan: 0.38,
+    durationMs: 8800,
+    rotationDurationMs: 42000,
+    pulseDurationMs: 6000,
+    strokeWidth: 4.3,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const sx = config.lissScaleX * (0.92 + detailScale * 0.16);
+      const sy = config.lissScaleY * (0.92 + detailScale * 0.16);
+      return {
+        x: 50 + sx * Math.sin(Math.round(config.lissA) * t + config.lissDelta),
+        y: 50 + sy * Math.sin(Math.round(config.lissB) * t),
+      };
+    },
+  };
+}
+
+function createGeneratedSpiroPreset({ name, rMajor, rMinor, d, scale, inward = true, hue }) {
+  return {
+    name,
+    tag: inward ? "Generated Hypotrochoid" : "Generated Epitrochoid",
+    descriptionEn: `A generated ${inward ? "hypotrochoid" : "epitrochoid"} preset expanding the spirograph family with curated defaults.`,
+    descriptionZh: `生成式${inward ? "内旋轮线" : "外旋轮线"}预设，以精选参数扩展 spirograph 家族。`,
+    generated: true,
+    spiroMajor: rMajor,
+    spiroMinor: rMinor,
+    spiroD: d,
+    spiroScale: scale,
+    spiroInward: inward,
+    hue,
+    hueRange: 140,
+    controls: [
+      { key: "spiroMajor", labelEn: "R", labelZh: "R", min: 3, max: 13, step: 0.1 },
+      { key: "spiroMinor", labelEn: "r", labelZh: "r", min: 0.8, max: 6, step: 0.1 },
+      { key: "spiroD", labelEn: "d", labelZh: "d", min: 0.8, max: 9, step: 0.1 },
+      { key: "spiroScale", labelEn: "Scale", labelZh: "缩放", min: 1.4, max: 4.4, step: 0.05 },
+    ],
+    formula(config) {
+      const sign = config.spiroInward ? "-" : "+";
+      return [
+        `x(t)=50+((R${sign}r)cos t + d cos((R${sign}r)t/r)) · ${config.spiroScale.toFixed(2)}`,
+        `y(t)=50+((R${sign}r)sin t - d sin((R${sign}r)t/r)) · ${config.spiroScale.toFixed(2)}`,
+        "Generated preset: spirograph family",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 94,
+    trailSpan: 0.36,
+    durationMs: 9400,
+    rotationDurationMs: 68000,
+    pulseDurationMs: 6500,
+    strokeWidth: 4.1,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const r = config.spiroMinor;
+      const d = config.spiroD * (0.92 + detailScale * 0.16);
+      const base = config.spiroInward ? config.spiroMajor - r : config.spiroMajor + r;
+      const ratio = base / r;
+      const x = base * Math.cos(t) + d * Math.cos(ratio * t);
+      const y = base * Math.sin(t) - d * Math.sin(ratio * t);
+      return {
+        x: 50 + x * config.spiroScale,
+        y: 50 + y * config.spiroScale,
+      };
+    },
+  };
+}
+
+function createGeneratedSuperellipsePreset({ name, width, height, power, hue }) {
+  return {
+    name,
+    tag: "Generated Superellipse",
+    descriptionEn: `A generated superellipse preset with power ${power}, giving the gallery more rounded-geometry options.`,
+    descriptionZh: `生成式超椭圆预设，指数为 ${power}，为图库加入更多圆润几何选择。`,
+    generated: true,
+    genSuperWidth: width,
+    genSuperHeight: height,
+    genSuperPower: power,
+    genSuperPulse: 3.5,
+    hue,
+    hueRange: 96,
+    controls: [
+      { key: "genSuperWidth", labelEn: "Width", labelZh: "宽度", min: 10, max: 38, step: 0.5 },
+      { key: "genSuperHeight", labelEn: "Height", labelZh: "高度", min: 10, max: 38, step: 0.5 },
+      { key: "genSuperPower", labelEn: "Power", labelZh: "指数", min: 1.2, max: 8, step: 0.1 },
+      { key: "genSuperPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 8, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `n=${config.genSuperPower.toFixed(1)}`,
+        "x(t)=50+a·sgn(cos t)|cos t|^(2/n)",
+        "y(t)=50+b·sgn(sin t)|sin t|^(2/n)",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 82,
+    trailSpan: 0.3,
+    durationMs: 8200,
+    rotationDurationMs: 62000,
+    pulseDurationMs: 5600,
+    strokeWidth: 4.4,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const signedPow = (value) => Math.sign(value) * Math.abs(value) ** (2 / config.genSuperPower);
+      const pulse = detailScale * config.genSuperPulse;
+      return {
+        x: 50 + (config.genSuperWidth + pulse) * signedPow(Math.cos(t)),
+        y: 50 + (config.genSuperHeight + pulse * 0.7) * signedPow(Math.sin(t)),
+      };
+    },
+  };
+}
+
+const generatedCurvePresets = [
+  createGeneratedRosePreset({ name: "Rose Prime 7", k: 7, radius: 25, pulse: 2.8, phase: 0.04, hue: 315 }),
+  createGeneratedRosePreset({ name: "Rose Prime 11", k: 11, radius: 23, pulse: 2.2, phase: 0.02, hue: 335 }),
+  createGeneratedRosePreset({ name: "Rose Even 8", k: 8, radius: 24, pulse: 2.6, phase: 0.08, hue: 290 }),
+  createGeneratedRosePreset({ name: "Rose Orbit 12", k: 12, radius: 22, pulse: 3.2, phase: -0.03, hue: 265 }),
+  createGeneratedRosePreset({ name: "Rose Bloom 13", k: 13, radius: 21, pulse: 2.4, phase: 0.01, hue: 345 }),
+  createGeneratedRosePreset({ name: "Rose Soft 6", k: 6, radius: 27, pulse: 3.5, phase: -0.06, hue: 300 }),
+  createGeneratedLissajousPreset({ name: "Lissajous 3:4", ax: 3, by: 4, delta: 1.1, scaleX: 28, scaleY: 26, hue: 198 }),
+  createGeneratedLissajousPreset({ name: "Lissajous 5:6", ax: 5, by: 6, delta: 0.8, scaleX: 27, scaleY: 27, hue: 215 }),
+  createGeneratedLissajousPreset({ name: "Lissajous 2:7", ax: 2, by: 7, delta: 1.57, scaleX: 30, scaleY: 24, hue: 232 }),
+  createGeneratedLissajousPreset({ name: "Lissajous 4:9", ax: 4, by: 9, delta: 0.55, scaleX: 26, scaleY: 29, hue: 250 }),
+  createGeneratedLissajousPreset({ name: "Lissajous 7:8", ax: 7, by: 8, delta: 1.32, scaleX: 25, scaleY: 25, hue: 178 }),
+  createGeneratedLissajousPreset({ name: "Lissajous 3:8", ax: 3, by: 8, delta: 2.05, scaleX: 29, scaleY: 23, hue: 205 }),
+  createGeneratedSpiroPreset({ name: "Hypotrochoid Pearl", rMajor: 8, rMinor: 3, d: 5.5, scale: 2.55, inward: true, hue: 40 }),
+  createGeneratedSpiroPreset({ name: "Hypotrochoid Gear 9", rMajor: 9, rMinor: 2.5, d: 4.8, scale: 2.65, inward: true, hue: 55 }),
+  createGeneratedSpiroPreset({ name: "Hypotrochoid Ribbon 10", rMajor: 10, rMinor: 3.2, d: 6.2, scale: 2.25, inward: true, hue: 70 }),
+  createGeneratedSpiroPreset({ name: "Epitrochoid Halo", rMajor: 6.5, rMinor: 2.4, d: 4.1, scale: 2.5, inward: false, hue: 25 }),
+  createGeneratedSpiroPreset({ name: "Epitrochoid Crown 8", rMajor: 8, rMinor: 2.2, d: 5.2, scale: 2.15, inward: false, hue: 18 }),
+  createGeneratedSpiroPreset({ name: "Epitrochoid Orbit 11", rMajor: 7.5, rMinor: 1.8, d: 4.8, scale: 2.2, inward: false, hue: 82 }),
+  createGeneratedSuperellipsePreset({ name: "Superellipse Pillow", width: 27, height: 22, power: 4.8, hue: 160 }),
+  createGeneratedSuperellipsePreset({ name: "Superellipse Tablet", width: 31, height: 18, power: 5.6, hue: 145 }),
+  createGeneratedSuperellipsePreset({ name: "Superellipse Gem", width: 24, height: 24, power: 2.4, hue: 130 }),
+  createGeneratedSuperellipsePreset({ name: "Superellipse Window", width: 29, height: 25, power: 6.2, hue: 118 }),
+  createGeneratedSuperellipsePreset({ name: "Superellipse Orbit", width: 20, height: 30, power: 3.4, hue: 170 }),
+  createGeneratedSuperellipsePreset({ name: "Superellipse Softbox", width: 32, height: 20, power: 7.0, hue: 155 }),
+];
+
+curves.push(...generatedCurvePresets);
+
 function normalizeProgress(progress) {
   return ((progress % 1) + 1) % 1;
 }
