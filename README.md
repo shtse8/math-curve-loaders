@@ -12,6 +12,7 @@ It includes:
 - per-curve formula notes and code snippets
 - copy support for formula and code
 - category filters so visitors can browse families such as roses, spirographs, spirals, hearts, harmonic paths, and advanced geometry
+- visual controls for hue, gradient range, saturation, lightness, and glow on every loader
 
 ## Files
 
