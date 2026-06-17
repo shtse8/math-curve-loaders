@@ -8,7 +8,7 @@ This fork is evolving into a larger, more polished mainline gallery: more formul
 
 ## What is inside
 
-- 150 mathematical loaders today, with a roadmap to keep expanding in focused waves
+- 200 mathematical loaders today, with a roadmap to keep expanding in focused waves
 - curve families and generated preset waves such as rose curves, Lissajous curves, hypotrochoids, spirals, heart curves, Fourier braids, polar waves, epicycloids, astroids, superellipses, projected knots, cardioids, infinity curves, shell spirals, superformula stars, nephroids, Maurer-style rose chords, and Fourier-style paths
 - category filters for originals, roses, spirographs, spirals, hearts, harmonic paths, and advanced geometry
 - click-to-open modal previews with live controls
