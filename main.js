@@ -65,6 +65,44 @@ const UI_TEXT = {
   },
 };
 
+const VISUAL_DEFAULTS = {
+  hue: 210,
+  hueRange: 72,
+  saturation: 92,
+  lightness: 64,
+  glow: 5,
+};
+
+function getVisualConfig(config) {
+  return {
+    ...VISUAL_DEFAULTS,
+    ...Object.fromEntries(
+      Object.keys(VISUAL_DEFAULTS).map((key) => [key, config[key] ?? VISUAL_DEFAULTS[key]])
+    ),
+  };
+}
+
+function getHslColor(visual, offset = 0, alpha = 1) {
+  const hue = ((visual.hue + offset) % 360 + 360) % 360;
+  const alphaText = alpha >= 1 ? "" : ` / ${alpha.toFixed(3)}`;
+  return `hsl(${hue.toFixed(1)} ${visual.saturation.toFixed(1)}% ${visual.lightness.toFixed(1)}%${alphaText})`;
+}
+
+function getParticleColor(config, index) {
+  const visual = getVisualConfig(config);
+  const denominator = Math.max(1, (config.particleCount ?? 1) - 1);
+  const ratio = index / denominator;
+  return getHslColor(visual, visual.hueRange * ratio);
+}
+
+function applyVisualStyle(group, path, config) {
+  const visual = getVisualConfig(config);
+  path.setAttribute("stroke", getHslColor(visual, visual.hueRange * 0.16));
+  group.style.filter = visual.glow > 0
+    ? `drop-shadow(0 0 ${visual.glow.toFixed(1)}px ${getHslColor(visual, visual.hueRange * 0.45, 0.52)})`
+    : "none";
+}
+
 const CATEGORIES = [
   { id: "all", labelEn: "All", labelZh: "全部" },
   { id: "original", labelEn: "Originals", labelZh: "原始灵感" },
@@ -115,6 +153,11 @@ const CONTROL_DEFS = [
   { key: "pulseDurationMs", labelEn: "Pulse", labelZh: "呼吸时长", min: 1800, max: 10000, step: 100 },
   { key: "rotationDurationMs", labelEn: "Rotate", labelZh: "旋转时长", min: 6000, max: 60000, step: 500 },
   { key: "strokeWidth", labelEn: "Stroke", labelZh: "轨迹粗细", min: 2.5, max: 7.5, step: 0.1 },
+  { key: "hue", labelEn: "Hue", labelZh: "色相", min: 0, max: 360, step: 1 },
+  { key: "hueRange", labelEn: "Gradient", labelZh: "渐变范围", min: 0, max: 360, step: 1 },
+  { key: "saturation", labelEn: "Saturation", labelZh: "饱和度", min: 20, max: 100, step: 1 },
+  { key: "lightness", labelEn: "Lightness", labelZh: "亮度", min: 35, max: 82, step: 1 },
+  { key: "glow", labelEn: "Glow", labelZh: "光晕", min: 0, max: 18, step: 0.5 },
 ];
 
 const curves = [
@@ -1250,12 +1293,13 @@ function createCard(config) {
   svg.appendChild(group);
   frame.appendChild(svg);
 
-  const particles = Array.from({ length: config.particleCount }, () => {
+  const particles = Array.from({ length: config.particleCount }, (_, index) => {
     const circle = document.createElementNS(SVG_NS, "circle");
-    circle.setAttribute("fill", "currentColor");
+    circle.setAttribute("fill", getParticleColor(config, index));
     group.appendChild(circle);
     return circle;
   });
+  applyVisualStyle(group, path, config);
 
   return {
     article,
@@ -1418,6 +1462,15 @@ function formatControlValue(key, value) {
   if (key.endsWith("Ms")) {
     return `${(value / 1000).toFixed(1)}s`;
   }
+  if (key === "hue" || key === "hueRange") {
+    return `${Math.round(value)}°`;
+  }
+  if (key === "saturation" || key === "lightness") {
+    return `${Math.round(value)}%`;
+  }
+  if (key === "glow") {
+    return `${Number(value).toFixed(1)}px`;
+  }
 
   if (
     key === "trailSpan" ||
@@ -1432,6 +1485,7 @@ function formatControlValue(key, value) {
 
 function createViewerConfig(config) {
   return {
+    ...VISUAL_DEFAULTS,
     ...config,
     point: config.point,
     formula: config.formula,
@@ -1478,6 +1532,7 @@ function syncViewerMeta(config) {
   viewerFormula.textContent = formatFormula(config);
   viewerCode.textContent = formatCurveCode(config);
   viewerPath.setAttribute("stroke-width", String(config.strokeWidth));
+  applyVisualStyle(viewerGroup, viewerPath, config);
   renderControls(config);
 }
 
@@ -1643,6 +1698,15 @@ function formatCurveCode(config) {
     "    function normalizeProgress(progress) {",
     "      return ((progress % 1) + 1) % 1;",
     "    }",
+    "    function getVisualConfig() {",
+    "      return { hue: config.hue ?? 210, hueRange: config.hueRange ?? 72, saturation: config.saturation ?? 92, lightness: config.lightness ?? 64, glow: config.glow ?? 5 };",
+    "    }",
+    "    function getHslColor(offset = 0, alpha = 1) {",
+    "      const visual = getVisualConfig();",
+    "      const hue = ((visual.hue + offset) % 360 + 360) % 360;",
+    "      const alphaText = alpha >= 1 ? '' : ` / ${alpha.toFixed(3)}`;",
+    "      return `hsl(${hue.toFixed(1)} ${visual.saturation.toFixed(1)}% ${visual.lightness.toFixed(1)}%${alphaText})`;",
+    "    }",
     "    function getDetailScale(time) {",
     "      const pulseProgress = (time % config.pulseDurationMs) / config.pulseDurationMs;",
     "      const pulseAngle = pulseProgress * Math.PI * 2;",
@@ -1674,10 +1738,14 @@ function formatCurveCode(config) {
     "      const time = now - startedAt;",
     "      const progress = (time % config.durationMs) / config.durationMs;",
     "      const detailScale = getDetailScale(time);",
+    "      const visual = getVisualConfig();",
     "      group.setAttribute('transform', `rotate(${getRotation(time)} 50 50)`);",
+    "      group.style.filter = visual.glow > 0 ? `drop-shadow(0 0 ${visual.glow.toFixed(1)}px ${getHslColor(visual.hueRange * 0.45, 0.52)})` : 'none';",
+    "      path.setAttribute('stroke', getHslColor(visual.hueRange * 0.16));",
     "      path.setAttribute('d', buildPath(detailScale));",
     "      particles.forEach((node, index) => {",
     "        const particle = getParticle(index, progress, detailScale);",
+    "        node.setAttribute('fill', getHslColor(visual.hueRange * (index / Math.max(1, config.particleCount - 1))));",
     "        node.setAttribute('cx', particle.x.toFixed(2));",
     "        node.setAttribute('cy', particle.y.toFixed(2));",
     "        node.setAttribute('r', particle.radius.toFixed(2));",
@@ -1911,10 +1979,12 @@ function renderInstance(instance, now) {
   const rotation = getRotation(time, config, phaseOffset);
 
   group.setAttribute("transform", `rotate(${rotation} 50 50)`);
+  applyVisualStyle(group, path, config);
   path.setAttribute("d", buildPath(config, detailScale));
 
   particles.forEach((node, index) => {
     const particle = getParticle(config, index, progress, detailScale);
+    node.setAttribute("fill", getParticleColor(config, index));
     node.setAttribute("cx", particle.x.toFixed(2));
     node.setAttribute("cy", particle.y.toFixed(2));
     node.setAttribute("r", particle.radius.toFixed(2));
@@ -1936,6 +2006,7 @@ function renderViewer(now) {
   const rotation = getRotation(time, config, phaseOffset);
 
   viewerGroup.setAttribute("transform", `rotate(${rotation} 50 50)`);
+  applyVisualStyle(viewerGroup, viewerPath, config);
   viewerPath.setAttribute("d", buildPath(config, detailScale));
 
   viewerParticles.forEach((node, index) => {
@@ -1945,6 +2016,7 @@ function renderViewer(now) {
     }
 
     const particle = getParticle(config, index, progress, detailScale);
+    node.setAttribute("fill", getParticleColor(config, index));
     node.setAttribute("cx", particle.x.toFixed(2));
     node.setAttribute("cy", particle.y.toFixed(2));
     node.setAttribute("r", (particle.radius * 1.35).toFixed(2));
