@@ -130,16 +130,16 @@ function getCurveCategory(config) {
   if (haystack.includes("rose") || haystack.includes("petal")) {
     return "rose";
   }
-  if (haystack.includes("hypotrochoid") || haystack.includes("epicycloid") || haystack.includes("spiro")) {
+  if (haystack.includes("hypotrochoid") || haystack.includes("epicycloid") || haystack.includes("epitrochoid") || haystack.includes("cycloid") || haystack.includes("trochoid") || haystack.includes("nephroid") || haystack.includes("spiro")) {
     return "spiro";
   }
-  if (haystack.includes("spiral")) {
+  if (haystack.includes("spiral") || haystack.includes("shell")) {
     return "spiral";
   }
   if (haystack.includes("heart") || haystack.includes("cardioid")) {
     return "heart";
   }
-  if (haystack.includes("lissajous") || haystack.includes("fourier") || haystack.includes("maurer") || haystack.includes("ribbon") || haystack.includes("knot")) {
+  if (haystack.includes("lissajous") || haystack.includes("fourier") || haystack.includes("maurer") || haystack.includes("ribbon") || haystack.includes("knot") || haystack.includes("infinity") || haystack.includes("sine") || haystack.includes("weave")) {
     return "harmonic";
   }
 
@@ -149,9 +149,9 @@ function getCurveCategory(config) {
 const CONTROL_DEFS = [
   { key: "particleCount", labelEn: "Particles", labelZh: "粒子数", min: 24, max: 140, step: 1 },
   { key: "trailSpan", labelEn: "Trail", labelZh: "尾迹长度", min: 0.12, max: 0.68, step: 0.01 },
-  { key: "durationMs", labelEn: "Loop", labelZh: "循环时长", min: 2400, max: 12000, step: 100 },
+  { key: "durationMs", labelEn: "Loop", labelZh: "循环时长", min: 2400, max: 24000, step: 100 },
   { key: "pulseDurationMs", labelEn: "Pulse", labelZh: "呼吸时长", min: 1800, max: 10000, step: 100 },
-  { key: "rotationDurationMs", labelEn: "Rotate", labelZh: "旋转时长", min: 6000, max: 60000, step: 500 },
+  { key: "rotationDurationMs", labelEn: "Rotate", labelZh: "旋转时长", min: 6000, max: 120000, step: 500 },
   { key: "strokeWidth", labelEn: "Stroke", labelZh: "轨迹粗细", min: 2.5, max: 7.5, step: 0.1 },
   { key: "hue", labelEn: "Hue", labelZh: "色相", min: 0, max: 360, step: 1 },
   { key: "hueRange", labelEn: "Gradient", labelZh: "渐变范围", min: 0, max: 360, step: 1 },
@@ -1250,6 +1250,306 @@ const curves = [
       };
     },
   },
+  {
+    name: "Gerono Infinity",
+    tag: "Infinity Weave",
+    descriptionEn: "A figure-eight Lemniscate of Gerono crosses the center smoothly, creating a readable infinity spinner.",
+    descriptionZh: "Gerono 双纽线会在中心平滑交叉，形成清晰易读的无限符号旋转加载器。",
+    geronoA: 28,
+    geronoPulse: 4,
+    controls: [
+      { key: "geronoA", labelEn: "Size", labelZh: "大小", min: 12, max: 36, step: 0.5 },
+      { key: "geronoPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 8, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `a = ${config.geronoA.toFixed(1)} + ${config.geronoPulse.toFixed(1)}s`,
+        "x(t) = 50 + a cos t",
+        "y(t) = 50 + (a/2) sin 2t",
+      ].join("\n");
+    },
+    rotate: false,
+    particleCount: 84,
+    trailSpan: 0.42,
+    durationMs: 7600,
+    rotationDurationMs: 36000,
+    pulseDurationMs: 5600,
+    strokeWidth: 4.4,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const a = config.geronoA + detailScale * config.geronoPulse;
+      return {
+        x: 50 + a * Math.cos(t),
+        y: 50 + (a / 2) * Math.sin(2 * t),
+      };
+    },
+  },
+  {
+    name: "Epitrochoid Lantern",
+    tag: "Epitrochoid",
+    descriptionEn: "An epitrochoid with a short arm makes a lantern-like orbital bloom, adding another spirograph family to the set.",
+    descriptionZh: "短臂外旋轮线会形成像灯笼一样的环形花纹，为图库加入另一类 spirograph 轨迹。",
+    epiTrochoidR: 6,
+    epiTrochoidr: 1.7,
+    epiTrochoidD: 3.4,
+    epiTrochoidScale: 2.8,
+    controls: [
+      { key: "epiTrochoidR", labelEn: "R", labelZh: "R", min: 3, max: 10, step: 0.1 },
+      { key: "epiTrochoidr", labelEn: "r", labelZh: "r", min: 0.8, max: 4, step: 0.1 },
+      { key: "epiTrochoidD", labelEn: "d", labelZh: "d", min: 1, max: 7, step: 0.1 },
+      { key: "epiTrochoidScale", labelEn: "Scale", labelZh: "缩放", min: 1.6, max: 4, step: 0.05 },
+    ],
+    formula(config) {
+      return [
+        `x(t) = 50 + ((R+r)cos t - d cos((R+r)t/r)) · ${config.epiTrochoidScale.toFixed(2)}`,
+        `y(t) = 50 + ((R+r)sin t - d sin((R+r)t/r)) · ${config.epiTrochoidScale.toFixed(2)}`,
+        `R=${config.epiTrochoidR.toFixed(1)}, r=${config.epiTrochoidr.toFixed(1)}, d=${config.epiTrochoidD.toFixed(1)}`,
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 92,
+    trailSpan: 0.36,
+    durationMs: 8800,
+    rotationDurationMs: 64000,
+    pulseDurationMs: 6200,
+    strokeWidth: 4.2,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const d = config.epiTrochoidD * (0.9 + detailScale * 0.18);
+      const ratio = (config.epiTrochoidR + config.epiTrochoidr) / config.epiTrochoidr;
+      const x = (config.epiTrochoidR + config.epiTrochoidr) * Math.cos(t) - d * Math.cos(ratio * t);
+      const y = (config.epiTrochoidR + config.epiTrochoidr) * Math.sin(t) - d * Math.sin(ratio * t);
+      return {
+        x: 50 + x * config.epiTrochoidScale,
+        y: 50 + y * config.epiTrochoidScale,
+      };
+    },
+  },
+  {
+    name: "Archimedean Spiral",
+    tag: "Linear Spiral",
+    descriptionEn: "A linear-radius spiral winds outward at an even pace, useful for search and loading states that should feel directional.",
+    descriptionZh: "线性半径螺旋会以稳定节奏向外绕出，适合带有方向感的搜索或加载状态。",
+    archTurns: 3.2,
+    archRadius: 29,
+    archPulse: 3,
+    controls: [
+      { key: "archTurns", labelEn: "Turns", labelZh: "圈数", min: 1.5, max: 6, step: 0.1 },
+      { key: "archRadius", labelEn: "Radius", labelZh: "半径", min: 14, max: 36, step: 0.5 },
+      { key: "archPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 8, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `θ(t) = ${config.archTurns.toFixed(1)} · 2πt`,
+        `r(t) = (${config.archRadius.toFixed(1)} + ${config.archPulse.toFixed(1)}s) · t`,
+        "x(t)=50+r cosθ, y(t)=50+r sinθ",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 88,
+    trailSpan: 0.52,
+    durationMs: 9200,
+    rotationDurationMs: 54000,
+    pulseDurationMs: 5200,
+    strokeWidth: 4.1,
+    point(progress, detailScale, config) {
+      const t = progress;
+      const theta = t * config.archTurns * Math.PI * 2;
+      const radius = (config.archRadius + detailScale * config.archPulse) * t;
+      return {
+        x: 50 + radius * Math.cos(theta),
+        y: 50 + radius * Math.sin(theta),
+      };
+    },
+  },
+  {
+    name: "Fermat Spiral",
+    tag: "√t Spiral",
+    descriptionEn: "Fermat's spiral uses a square-root radius, making the inner motion dense while the outer trail opens into balanced arms.",
+    descriptionZh: "费马螺旋使用平方根半径，中心更密集，外侧则展开成均衡的双臂轨迹。",
+    fermatTurns: 4.6,
+    fermatRadius: 31,
+    fermatTwist: 0.5,
+    controls: [
+      { key: "fermatTurns", labelEn: "Turns", labelZh: "圈数", min: 2, max: 8, step: 0.1 },
+      { key: "fermatRadius", labelEn: "Radius", labelZh: "半径", min: 14, max: 38, step: 0.5 },
+      { key: "fermatTwist", labelEn: "Twist", labelZh: "扭转", min: -1, max: 1, step: 0.05 },
+    ],
+    formula(config) {
+      return [
+        `θ(t) = ${config.fermatTurns.toFixed(1)} · 2πt`,
+        `r(t) = ${config.fermatRadius.toFixed(1)}√t`,
+        "x(t)=50+r cosθ, y(t)=50+r sinθ",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 90,
+    trailSpan: 0.48,
+    durationMs: 10400,
+    rotationDurationMs: 68000,
+    pulseDurationMs: 6400,
+    strokeWidth: 4.0,
+    point(progress, detailScale, config) {
+      const t = progress;
+      const theta = (t * config.fermatTurns + config.fermatTwist * detailScale) * Math.PI * 2;
+      const radius = config.fermatRadius * Math.sqrt(t);
+      return {
+        x: 50 + radius * Math.cos(theta),
+        y: 50 + radius * Math.sin(theta),
+      };
+    },
+  },
+  {
+    name: "Superformula Star",
+    tag: "Gielis Superformula",
+    descriptionEn: "A compact superformula star can be tuned into many rounded polygon and floral silhouettes from one equation.",
+    descriptionZh: "紧凑的 Gielis 超公式星形可由同一条公式调出圆角多边形和花状轮廓。",
+    superM: 7,
+    superN1: 0.35,
+    superN2: 1.2,
+    superN3: 1.2,
+    superScale: 16,
+    controls: [
+      { key: "superM", labelEn: "m", labelZh: "m 值", min: 2, max: 12, step: 1 },
+      { key: "superN1", labelEn: "n1", labelZh: "n1", min: 0.2, max: 3, step: 0.05 },
+      { key: "superN2", labelEn: "n2", labelZh: "n2", min: 0.2, max: 3, step: 0.05 },
+      { key: "superN3", labelEn: "n3", labelZh: "n3", min: 0.2, max: 3, step: 0.05 },
+      { key: "superScale", labelEn: "Scale", labelZh: "缩放", min: 8, max: 26, step: 0.5 },
+    ],
+    formula(config) {
+      return [
+        `r(θ) = (|cos(mθ/4)|^n2 + |sin(mθ/4)|^n3)^(-1/n1)`,
+        `m=${Math.round(config.superM)}, n1=${config.superN1.toFixed(2)}, n2=${config.superN2.toFixed(2)}, n3=${config.superN3.toFixed(2)}`,
+        "x(t)=50+r cosθ, y(t)=50+r sinθ",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 96,
+    trailSpan: 0.32,
+    durationMs: 9800,
+    rotationDurationMs: 72000,
+    pulseDurationMs: 6800,
+    strokeWidth: 4.1,
+    point(progress, detailScale, config) {
+      const theta = progress * Math.PI * 2;
+      const m = Math.round(config.superM);
+      const a = Math.abs(Math.cos((m * theta) / 4)) ** config.superN2;
+      const b = Math.abs(Math.sin((m * theta) / 4)) ** config.superN3;
+      const r = (a + b) ** (-1 / config.superN1);
+      const scale = config.superScale * (0.92 + detailScale * 0.16);
+      return {
+        x: 50 + r * Math.cos(theta) * scale,
+        y: 50 + r * Math.sin(theta) * scale,
+      };
+    },
+  },
+  {
+    name: "Nephroid Caustic",
+    tag: "Two-Cusped Epicycloid",
+    descriptionEn: "A nephroid's two large cusps make a soft caustic glow that feels slower and more elegant than dense spirographs.",
+    descriptionZh: "肾形线拥有两个明显尖点，像柔和焦散光一样，比密集旋轮线更慢、更优雅。",
+    nephroidA: 10,
+    nephroidPulse: 2.5,
+    controls: [
+      { key: "nephroidA", labelEn: "Size", labelZh: "大小", min: 5, max: 16, step: 0.1 },
+      { key: "nephroidPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 5, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `a = ${config.nephroidA.toFixed(1)} + ${config.nephroidPulse.toFixed(1)}s`,
+        "x(t)=50+a(3cos t - cos 3t)",
+        "y(t)=50+a(3sin t - sin 3t)",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 86,
+    trailSpan: 0.4,
+    durationMs: 9000,
+    rotationDurationMs: 62000,
+    pulseDurationMs: 6200,
+    strokeWidth: 4.6,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const a = config.nephroidA + detailScale * config.nephroidPulse;
+      return {
+        x: 50 + a * (3 * Math.cos(t) - Math.cos(3 * t)),
+        y: 50 + a * (3 * Math.sin(t) - Math.sin(3 * t)),
+      };
+    },
+  },
+  {
+    name: "Cochleoid Shell",
+    tag: "Shell Spiral",
+    descriptionEn: "A cochleoid-style shell folds a sine wave into a spiral radius, giving the loader a natural conch-like sweep.",
+    descriptionZh: "贝壳形螺线把正弦波折入螺旋半径，形成类似海螺的自然扫动轨迹。",
+    cochA: 28,
+    cochTurns: 3.4,
+    cochOffset: 0.35,
+    controls: [
+      { key: "cochA", labelEn: "Size", labelZh: "大小", min: 12, max: 36, step: 0.5 },
+      { key: "cochTurns", labelEn: "Turns", labelZh: "圈数", min: 1.5, max: 6, step: 0.1 },
+      { key: "cochOffset", labelEn: "Core", labelZh: "核心", min: 0.05, max: 1, step: 0.05 },
+    ],
+    formula(config) {
+      return [
+        `θ(t) = ${config.cochTurns.toFixed(1)} · 2πt`,
+        `r(t) = ${config.cochA.toFixed(1)} sinθ / (θ + ${config.cochOffset.toFixed(2)})`,
+        "x(t)=50+r cosθ, y(t)=50+r sinθ",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 92,
+    trailSpan: 0.5,
+    durationMs: 11000,
+    rotationDurationMs: 78000,
+    pulseDurationMs: 7200,
+    strokeWidth: 4.0,
+    point(progress, detailScale, config) {
+      const theta = (progress * config.cochTurns + 0.08) * Math.PI * 2;
+      const radius = (config.cochA * (0.9 + detailScale * 0.18) * Math.sin(theta)) / (theta + config.cochOffset);
+      return {
+        x: 50 + radius * Math.cos(theta) * 3.4,
+        y: 50 + radius * Math.sin(theta) * 3.4,
+      };
+    },
+  },
+  {
+    name: "Sine Weave",
+    tag: "Harmonic Weave",
+    descriptionEn: "Layered sine waves braid a smooth horizontal weave, adding a calm waveform loader beside the closed-orbit curves.",
+    descriptionZh: "多层正弦波会编织成平滑的横向轨迹，为闭合曲线之外加入安静的波形加载器。",
+    sineAmp: 20,
+    sineFreq: 2.5,
+    sineMod: 0.35,
+    controls: [
+      { key: "sineAmp", labelEn: "Amplitude", labelZh: "振幅", min: 8, max: 28, step: 0.5 },
+      { key: "sineFreq", labelEn: "Frequency", labelZh: "频率", min: 1, max: 6, step: 0.1 },
+      { key: "sineMod", labelEn: "Mod", labelZh: "调制", min: 0, max: 1, step: 0.05 },
+    ],
+    formula(config) {
+      return [
+        "x(t)=14+72t",
+        `y(t)=50+${config.sineAmp.toFixed(1)}(sin(${config.sineFreq.toFixed(1)}τ)+${config.sineMod.toFixed(2)}sin(3τ))`,
+        "τ = 2πt",
+      ].join("\n");
+    },
+    rotate: false,
+    particleCount: 76,
+    trailSpan: 0.36,
+    durationMs: 6800,
+    rotationDurationMs: 30000,
+    pulseDurationMs: 5400,
+    strokeWidth: 4.5,
+    point(progress, detailScale, config) {
+      const t = progress;
+      const tau = Math.PI * 2 * t;
+      return {
+        x: 14 + 72 * t,
+        y: 50 + config.sineAmp * (0.85 + detailScale * 0.22) * (Math.sin(config.sineFreq * tau) + config.sineMod * Math.sin(3 * tau)),
+      };
+    },
+  },
+
 
 ];
 
@@ -1679,7 +1979,7 @@ function formatCurveCode(config) {
     `      <div class="tag">${config.tag}</div>`,
     "    </div>",
     '    <pre class="formula" id="formula"></pre>',
-    '    <a class="back-link" href="https://paidax01.github.io/math-curve-loaders/" target="_blank" rel="noreferrer">View All</a>',
+    '    <a class="back-link" href="https://shtse8.github.io/math-curve-loaders/" target="_blank" rel="noreferrer">View All</a>',
     "  </div>",
     "  <script>",
     "    const SVG_NS = 'http://www.w3.org/2000/svg';",
