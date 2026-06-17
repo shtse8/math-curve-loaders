@@ -1,6 +1,9 @@
 const SVG_NS = "http://www.w3.org/2000/svg";
 const gallery = document.querySelector("#gallery");
 const categoryControls = document.querySelector("#category-controls");
+const galleryStatus = document.querySelector("#gallery-status");
+const loadMoreButton = document.querySelector("#load-more");
+const showAllButton = document.querySelector("#show-all");
 const viewerModal = document.querySelector("#viewer-modal");
 const viewerBackdrop = document.querySelector("#viewer-backdrop");
 const viewer = document.querySelector("#viewer");
@@ -25,6 +28,10 @@ const viewerFormulaLabel = document.querySelector("#viewer-formula-label");
 const viewerCodeLabel = document.querySelector("#viewer-code-label");
 let openAnimationFrame = 0;
 let currentLanguage = "en";
+const INITIAL_VISIBLE_COUNT = 24;
+const PAGE_SIZE = 24;
+let visibleLimit = INITIAL_VISIBLE_COUNT;
+let showAllLoaders = false;
 
 const UI_TEXT = {
   en: {
@@ -32,6 +39,9 @@ const UI_TEXT = {
     heroTitle: "A Gallery of Mathematical Loading Animations",
     galleryLabel: "Mathematical curve animation gallery",
     categoryLabel: "Filter by curve family",
+    loadMore: "Load more",
+    showAll: "Show all",
+    galleryStatus: (shown, total) => `Showing ${shown} of ${total} loaders`,
     controls: "Controls",
     formula: "Formula",
     code: "Code",
@@ -50,6 +60,9 @@ const UI_TEXT = {
     heroTitle: "基于数学曲线的加载动画集",
     galleryLabel: "数学曲线动画画廊",
     categoryLabel: "按曲线类别筛选",
+    loadMore: "加载更多",
+    showAll: "显示全部",
+    galleryStatus: (shown, total) => `正在显示 ${shown} / ${total} 个加载器`,
     controls: "配置项",
     formula: "公式",
     code: "代码",
@@ -2146,6 +2159,7 @@ function createCard(config) {
     particles,
     startTime: performance.now(),
     phaseOffset: Math.random(),
+    isInViewport: false,
   };
 }
 
@@ -2187,7 +2201,10 @@ function applyLanguage() {
     );
   });
 
+  loadMoreButton.textContent = ui.loadMore;
+  showAllButton.textContent = ui.showAll;
   updateCategoryControls();
+  applyCategoryFilter();
 
   if (activeInstance) {
     viewerDesc.textContent = getDescription(activeInstance.config);
@@ -2212,14 +2229,37 @@ function updateCategoryControls() {
   });
 }
 
+function getFilteredInstances() {
+  return instances.filter(
+    (instance) => activeCategory === "all" || instance.article.dataset.category === activeCategory
+  );
+}
+
+function updateGalleryWindowControls(filteredCount, shownCount) {
+  const ui = UI_TEXT[currentLanguage];
+  galleryStatus.textContent = ui.galleryStatus(shownCount, filteredCount);
+  const canLoadMore = shownCount < filteredCount;
+  loadMoreButton.hidden = !canLoadMore;
+  showAllButton.hidden = !canLoadMore;
+  loadMoreButton.disabled = !canLoadMore;
+  showAllButton.disabled = !canLoadMore;
+}
+
 function applyCategoryFilter() {
+  const filteredInstances = getFilteredInstances();
+  const shownCount = showAllLoaders
+    ? filteredInstances.length
+    : Math.min(visibleLimit, filteredInstances.length);
+  const visibleSet = new Set(filteredInstances.slice(0, shownCount));
+
   instances.forEach((instance) => {
-    const isVisible = activeCategory === "all" || instance.article.dataset.category === activeCategory;
+    const isVisible = visibleSet.has(instance);
     instance.article.hidden = !isVisible;
     instance.article.setAttribute("aria-hidden", String(!isVisible));
     instance.article.tabIndex = isVisible ? 0 : -1;
   });
   updateCategoryControls();
+  updateGalleryWindowControls(filteredInstances.length, shownCount);
 }
 
 function createCategoryControls() {
@@ -2230,11 +2270,23 @@ function createCategoryControls() {
     button.dataset.category = category.id;
     button.addEventListener("click", () => {
       activeCategory = category.id;
+      visibleLimit = INITIAL_VISIBLE_COUNT;
+      showAllLoaders = false;
       applyCategoryFilter();
     });
     categoryControls.appendChild(button);
   });
 }
+
+loadMoreButton.addEventListener("click", () => {
+  visibleLimit += PAGE_SIZE;
+  applyCategoryFilter();
+});
+
+showAllButton.addEventListener("click", () => {
+  showAllLoaders = true;
+  applyCategoryFilter();
+});
 
 function buildPath(config, detailScale, steps = 480) {
   return Array.from({ length: steps + 1 }, (_, index) => {
@@ -2283,6 +2335,28 @@ const instances = curves.map((config) => {
   const instance = createCard(config);
   gallery.appendChild(instance.article);
   return instance;
+});
+
+const cardObserver = "IntersectionObserver" in window
+  ? new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const instance = instances.find((item) => item.article === entry.target);
+          if (instance) {
+            instance.isInViewport = entry.isIntersecting;
+          }
+        });
+      },
+      { rootMargin: "220px 0px" }
+    )
+  : null;
+
+instances.forEach((instance) => {
+  if (cardObserver) {
+    cardObserver.observe(instance.article);
+  } else {
+    instance.isInViewport = true;
+  }
 });
 
 const viewerParticles = Array.from({ length: 120 }, () => {
@@ -2804,7 +2878,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 function renderInstance(instance, now) {
-  if (instance.article.hidden) {
+  if (instance.article.hidden || !instance.isInViewport) {
     return;
   }
 
