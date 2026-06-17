@@ -7,7 +7,7 @@ A small gallery of mathematical curve based loading animations built with plain 
 It includes:
 
 - the original particle trail loader
-- a collection of curve variants such as rose curves, Lissajous curves, hypotrochoids, cardioids, Cassini ovals, and Fourier-style paths
+- a collection of curve variants such as rose curves, Lissajous curves, hypotrochoids, epicycloids, astroids, superellipses, projected knots, cardioids, Maurer-style rose chords, and Fourier-style paths
 - click-to-open modal previews
 - per-curve formula notes and code snippets
 - copy support for formula and code
