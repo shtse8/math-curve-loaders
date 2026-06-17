@@ -131,6 +131,43 @@ body.modal-open {
   font-weight: 600;
 }
 
+.category-panel {
+  max-width: 1080px;
+  margin: 0 auto 22px;
+}
+
+.category-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.category-button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.category-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #fff;
+}
+
+.category-button.is-active {
+  border-color: rgba(255, 255, 255, 0.54);
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -197,7 +234,8 @@ body.modal-open {
   font-weight: 600;
 }
 
-.curve-tag {
+.curve-tag,
+.curve-category {
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -471,7 +509,44 @@ body.modal-open {
     max-width: 1200px;
   }
 
-  .gallery {
+  .category-panel {
+  max-width: 1080px;
+  margin: 0 auto 22px;
+}
+
+.category-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.category-button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.category-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #fff;
+}
+
+.category-button.is-active {
+  border-color: rgba(255, 255, 255, 0.54);
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+
+.gallery {
     grid-template-columns: 1fr;
   }
 
