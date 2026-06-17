@@ -1,5 +1,6 @@
 const SVG_NS = "http://www.w3.org/2000/svg";
 const gallery = document.querySelector("#gallery");
+const categoryControls = document.querySelector("#category-controls");
 const viewerModal = document.querySelector("#viewer-modal");
 const viewerBackdrop = document.querySelector("#viewer-backdrop");
 const viewer = document.querySelector("#viewer");
@@ -30,6 +31,7 @@ const UI_TEXT = {
     heroEyebrow: "Mathematical Curve Motion",
     heroTitle: "A Gallery of Mathematical Loading Animations",
     galleryLabel: "Mathematical curve animation gallery",
+    categoryLabel: "Filter by curve family",
     controls: "Controls",
     formula: "Formula",
     code: "Code",
@@ -47,6 +49,7 @@ const UI_TEXT = {
     heroEyebrow: "Mathematical Curve Motion",
     heroTitle: "基于数学曲线的加载动画集",
     galleryLabel: "数学曲线动画画廊",
+    categoryLabel: "按曲线类别筛选",
     controls: "配置项",
     formula: "公式",
     code: "代码",
@@ -61,6 +64,49 @@ const UI_TEXT = {
     ariaOpen: "查看放大预览与代码：",
   },
 };
+
+const CATEGORIES = [
+  { id: "all", labelEn: "All", labelZh: "全部" },
+  { id: "original", labelEn: "Originals", labelZh: "原始灵感" },
+  { id: "rose", labelEn: "Roses", labelZh: "玫瑰曲线" },
+  { id: "spiro", labelEn: "Spirograph", labelZh: "摆线 / 旋轮线" },
+  { id: "spiral", labelEn: "Spirals", labelZh: "螺旋" },
+  { id: "heart", labelEn: "Hearts", labelZh: "心形" },
+  { id: "harmonic", labelEn: "Harmonic", labelZh: "谐波 / 编织" },
+  { id: "advanced", labelEn: "Advanced", labelZh: "进阶几何" },
+];
+
+let activeCategory = "all";
+
+function getCategoryLabel(categoryId) {
+  const category = CATEGORIES.find((item) => item.id === categoryId) ?? CATEGORIES[0];
+  return currentLanguage === "zh" ? category.labelZh : category.labelEn;
+}
+
+function getCurveCategory(config) {
+  const haystack = `${config.name} ${config.tag}`.toLowerCase();
+
+  if (haystack.includes("thinking") || haystack.includes("original")) {
+    return "original";
+  }
+  if (haystack.includes("rose") || haystack.includes("petal")) {
+    return "rose";
+  }
+  if (haystack.includes("hypotrochoid") || haystack.includes("epicycloid") || haystack.includes("spiro")) {
+    return "spiro";
+  }
+  if (haystack.includes("spiral")) {
+    return "spiral";
+  }
+  if (haystack.includes("heart") || haystack.includes("cardioid")) {
+    return "heart";
+  }
+  if (haystack.includes("lissajous") || haystack.includes("fourier") || haystack.includes("maurer") || haystack.includes("ribbon") || haystack.includes("knot")) {
+    return "harmonic";
+  }
+
+  return "advanced";
+}
 
 const CONTROL_DEFS = [
   { key: "particleCount", labelEn: "Particles", labelZh: "粒子数", min: 24, max: 140, step: 1 },
@@ -1127,12 +1173,12 @@ const curves = [
     descriptionZh: "用移动弦步去采样玫瑰曲线，会把简单花瓣织成星芒一样的回折轨迹。",
     maurerRadius: 24,
     maurerK: 5,
-    maurerStep: 29,
+    maurerStep: 13,
     maurerPulse: 2.5,
     controls: [
       { key: "maurerRadius", labelEn: "Radius", labelZh: "半径", min: 12, max: 34, step: 0.5 },
       { key: "maurerK", labelEn: "k", labelZh: "k 值", min: 2, max: 9, step: 1 },
-      { key: "maurerStep", labelEn: "Step", labelZh: "弦步", min: 7, max: 73, step: 1 },
+      { key: "maurerStep", labelEn: "Step", labelZh: "弦步", min: 3, max: 37, step: 1 },
       { key: "maurerPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 6, step: 0.1 },
     ],
     formula(config) {
@@ -1142,11 +1188,11 @@ const curves = [
         "x(t) = 50 + r(t) cos θ, y(t) = 50 + r(t) sin θ",
       ].join("\n");
     },
-    rotate: false,
+    rotate: true,
     particleCount: 96,
-    trailSpan: 0.26,
-    durationMs: 8200,
-    rotationDurationMs: 50000,
+    trailSpan: 0.34,
+    durationMs: 16000,
+    rotationDurationMs: 72000,
     pulseDurationMs: 6200,
     strokeWidth: 4.0,
     point(progress, detailScale, config) {
@@ -1171,6 +1217,7 @@ function normalizeProgress(progress) {
 function createCard(config) {
   const article = document.createElement("article");
   article.className = "curve-card";
+  article.dataset.category = getCurveCategory(config);
   article.tabIndex = 0;
   article.setAttribute("role", "button");
 
@@ -1179,6 +1226,7 @@ function createCard(config) {
     <div class="curve-meta">
       <h2 class="curve-title">${config.name}</h2>
       <span class="curve-tag">${config.tag}</span>
+      <span class="curve-category"></span>
     </div>
     <p class="curve-desc"></p>
   `;
@@ -1230,6 +1278,7 @@ function applyLanguage() {
   heroEyebrow.textContent = ui.heroEyebrow;
   heroTitle.textContent = ui.heroTitle;
   gallery.setAttribute("aria-label", ui.galleryLabel);
+  categoryControls.setAttribute("aria-label", ui.categoryLabel);
   viewerControlsLabel.textContent = ui.controls;
   viewerFormulaLabel.textContent = ui.formula;
   viewerCodeLabel.textContent = ui.code;
@@ -1242,8 +1291,12 @@ function applyLanguage() {
 
   instances.forEach((instance) => {
     const desc = instance.article.querySelector(".curve-desc");
+    const category = instance.article.querySelector(".curve-category");
     if (desc) {
       desc.textContent = getDescription(instance.config);
+    }
+    if (category) {
+      category.textContent = getCategoryLabel(instance.article.dataset.category);
     }
     instance.article.setAttribute(
       "aria-label",
@@ -1253,9 +1306,53 @@ function applyLanguage() {
     );
   });
 
+  updateCategoryControls();
+
   if (activeInstance) {
     viewerDesc.textContent = getDescription(activeInstance.config);
   }
+}
+
+function getCategoryCount(categoryId) {
+  if (categoryId === "all") {
+    return instances.length;
+  }
+
+  return instances.filter((instance) => instance.article.dataset.category === categoryId).length;
+}
+
+function updateCategoryControls() {
+  categoryControls.querySelectorAll(".category-button").forEach((button) => {
+    const categoryId = button.dataset.category;
+    const count = getCategoryCount(categoryId);
+    button.classList.toggle("is-active", categoryId === activeCategory);
+    button.setAttribute("aria-pressed", String(categoryId === activeCategory));
+    button.textContent = `${getCategoryLabel(categoryId)} (${count})`;
+  });
+}
+
+function applyCategoryFilter() {
+  instances.forEach((instance) => {
+    const isVisible = activeCategory === "all" || instance.article.dataset.category === activeCategory;
+    instance.article.hidden = !isVisible;
+    instance.article.setAttribute("aria-hidden", String(!isVisible));
+    instance.article.tabIndex = isVisible ? 0 : -1;
+  });
+  updateCategoryControls();
+}
+
+function createCategoryControls() {
+  CATEGORIES.forEach((category) => {
+    const button = document.createElement("button");
+    button.className = "category-button";
+    button.type = "button";
+    button.dataset.category = category.id;
+    button.addEventListener("click", () => {
+      activeCategory = category.id;
+      applyCategoryFilter();
+    });
+    categoryControls.appendChild(button);
+  });
 }
 
 function buildPath(config, detailScale, steps = 480) {
@@ -1802,6 +1899,10 @@ document.addEventListener("keydown", (event) => {
 });
 
 function renderInstance(instance, now) {
+  if (instance.article.hidden) {
+    return;
+  }
+
   const time = now - instance.startTime;
   const { config, group, path, particles, phaseOffset } = instance;
   const progress =
@@ -1857,6 +1958,8 @@ function tick(now) {
   window.requestAnimationFrame(tick);
 }
 
+createCategoryControls();
+applyCategoryFilter();
 instances.forEach((instance) => renderInstance(instance, performance.now()));
 applyLanguage();
 window.requestAnimationFrame(tick);
