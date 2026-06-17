@@ -961,6 +961,207 @@ const curves = [
       };
     },
   },
+  {
+    name: "Epicycloid Crown",
+    tag: "Outer Spirograph",
+    descriptionEn: "An epicycloid rolls around the outside of a circle, so the particles flare outward into a bright crown of looping cusps.",
+    descriptionZh: "外摆线沿着圆外滚动，所以粒子会向外张开，形成一圈像皇冠一样的尖瓣回环。",
+    epiR: 7,
+    epir: 2.2,
+    epid: 4.2,
+    epiPulse: 0.7,
+    epiScale: 2.35,
+    controls: [
+      { key: "epiR", labelEn: "R", labelZh: "R", min: 4, max: 12, step: 0.1 },
+      { key: "epir", labelEn: "r", labelZh: "r", min: 1, max: 5, step: 0.1 },
+      { key: "epid", labelEn: "d", labelZh: "d", min: 1, max: 8, step: 0.1 },
+      { key: "epiPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 1.6, step: 0.05 },
+      { key: "epiScale", labelEn: "Scale", labelZh: "缩放", min: 1.4, max: 3.6, step: 0.05 },
+    ],
+    formula(config) {
+      return [
+        `x(t) = 50 + ((R+r) cos t - d cos((R+r)t/r)) · ${config.epiScale.toFixed(2)}`,
+        `y(t) = 50 + ((R+r) sin t - d sin((R+r)t/r)) · ${config.epiScale.toFixed(2)}`,
+        `R = ${config.epiR.toFixed(1)}, r = ${config.epir.toFixed(1)}, d = ${config.epid.toFixed(1)} + ${config.epiPulse.toFixed(2)}s`,
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 90,
+    trailSpan: 0.38,
+    durationMs: 7200,
+    rotationDurationMs: 36000,
+    pulseDurationMs: 5600,
+    strokeWidth: 4.3,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const d = config.epid + detailScale * config.epiPulse;
+      const ratio = (config.epiR + config.epir) / config.epir;
+      const x = (config.epiR + config.epir) * Math.cos(t) - d * Math.cos(ratio * t);
+      const y = (config.epiR + config.epir) * Math.sin(t) - d * Math.sin(ratio * t);
+      return {
+        x: 50 + x * config.epiScale,
+        y: 50 + y * config.epiScale,
+      };
+    },
+  },
+  {
+    name: "Astroid Pulse",
+    tag: "x^(2/3) + y^(2/3)",
+    descriptionEn: "The astroid's cos³ and sin³ coordinates pinch the orbit into four soft cusps, like a rounded diamond breathing in place.",
+    descriptionZh: "星形线使用 cos³ 与 sin³ 坐标，会把轨迹压成四个柔和尖点，像一颗会呼吸的圆角钻石。",
+    astroidA: 26,
+    astroidPulse: 5,
+    astroidSkew: 0.18,
+    controls: [
+      { key: "astroidA", labelEn: "a", labelZh: "a", min: 12, max: 34, step: 0.5 },
+      { key: "astroidPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 10, step: 0.1 },
+      { key: "astroidSkew", labelEn: "Skew", labelZh: "倾斜", min: -0.5, max: 0.5, step: 0.01 },
+    ],
+    formula(config) {
+      return [
+        `a = ${config.astroidA.toFixed(1)} + ${config.astroidPulse.toFixed(1)}s`,
+        "x(t) = 50 + a cos³ t + skew · a sin³ t",
+        "y(t) = 50 + a sin³ t - skew · a cos³ t",
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 78,
+    trailSpan: 0.34,
+    durationMs: 5600,
+    rotationDurationMs: 32000,
+    pulseDurationMs: 4800,
+    strokeWidth: 4.6,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const a = config.astroidA + detailScale * config.astroidPulse;
+      const cx = Math.cos(t) ** 3;
+      const sy = Math.sin(t) ** 3;
+      return {
+        x: 50 + a * (cx + config.astroidSkew * sy),
+        y: 50 + a * (sy - config.astroidSkew * cx),
+      };
+    },
+  },
+  {
+    name: "Superellipse Squircle",
+    tag: "Lamé Curve",
+    descriptionEn: "A Lamé superellipse morphs between square and circle energy, giving the loader a calm rounded-rectangle orbit.",
+    descriptionZh: "Lamé 超椭圆介乎方形和圆形之间，会形成一种平静的圆角矩形加载轨道。",
+    superA: 24,
+    superB: 20,
+    superPower: 3.6,
+    superPulse: 3.5,
+    controls: [
+      { key: "superA", labelEn: "Width", labelZh: "宽度", min: 12, max: 34, step: 0.5 },
+      { key: "superB", labelEn: "Height", labelZh: "高度", min: 12, max: 34, step: 0.5 },
+      { key: "superPower", labelEn: "Power", labelZh: "指数", min: 1.6, max: 6, step: 0.1 },
+      { key: "superPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 8, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `n = ${config.superPower.toFixed(1)}, a = ${config.superA.toFixed(1)} + ${config.superPulse.toFixed(1)}s`,
+        "x(t) = 50 + a · sgn(cos t)|cos t|^(2/n)",
+        `y(t) = 50 + ${config.superB.toFixed(1)} · sgn(sin t)|sin t|^(2/n)`,
+      ].join("\n");
+    },
+    rotate: false,
+    particleCount: 82,
+    trailSpan: 0.3,
+    durationMs: 6400,
+    rotationDurationMs: 38000,
+    pulseDurationMs: 5200,
+    strokeWidth: 4.5,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const n = config.superPower;
+      const a = config.superA + detailScale * config.superPulse;
+      const signedPow = (value) => Math.sign(value) * Math.abs(value) ** (2 / n);
+      return {
+        x: 50 + a * signedPow(Math.cos(t)),
+        y: 50 + config.superB * signedPow(Math.sin(t)),
+      };
+    },
+  },
+  {
+    name: "Trefoil Ribbon",
+    tag: "Projected Knot",
+    descriptionEn: "A 2D projection of the trefoil knot crosses over itself in a smooth ribbon, giving the loader a braided orbital feel.",
+    descriptionZh: "三叶结的二维投影会优雅地自我交叉，令加载轨迹有一种编织丝带般的绕行动感。",
+    trefoilScale: 8.2,
+    trefoilPulse: 1.1,
+    trefoilYScale: 0.86,
+    controls: [
+      { key: "trefoilScale", labelEn: "Scale", labelZh: "缩放", min: 4, max: 12, step: 0.1 },
+      { key: "trefoilPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 2.5, step: 0.05 },
+      { key: "trefoilYScale", labelEn: "Y scale", labelZh: "Y 缩放", min: 0.5, max: 1.2, step: 0.01 },
+    ],
+    formula(config) {
+      return [
+        "u(t) = (sin t + 2 sin 2t, cos t - 2 cos 2t)",
+        `x(t) = 50 + uₓ(t) · (${config.trefoilScale.toFixed(1)} + ${config.trefoilPulse.toFixed(2)}s)`,
+        `y(t) = 50 + uᵧ(t) · ${config.trefoilYScale.toFixed(2)} · (${config.trefoilScale.toFixed(1)} + ${config.trefoilPulse.toFixed(2)}s)`,
+      ].join("\n");
+    },
+    rotate: true,
+    particleCount: 88,
+    trailSpan: 0.36,
+    durationMs: 7000,
+    rotationDurationMs: 42000,
+    pulseDurationMs: 5600,
+    strokeWidth: 4.4,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const scale = config.trefoilScale + detailScale * config.trefoilPulse;
+      const x = Math.sin(t) + 2 * Math.sin(2 * t);
+      const y = Math.cos(t) - 2 * Math.cos(2 * t);
+      return {
+        x: 50 + x * scale,
+        y: 50 + y * scale * config.trefoilYScale,
+      };
+    },
+  },
+  {
+    name: "Maurer Spark",
+    tag: "Rose Chord Weave",
+    descriptionEn: "Sampling a rose curve with a moving chord step turns simple petals into a starry woven spark that keeps folding back on itself.",
+    descriptionZh: "用移动弦步去采样玫瑰曲线，会把简单花瓣织成星芒一样的回折轨迹。",
+    maurerRadius: 24,
+    maurerK: 5,
+    maurerStep: 29,
+    maurerPulse: 2.5,
+    controls: [
+      { key: "maurerRadius", labelEn: "Radius", labelZh: "半径", min: 12, max: 34, step: 0.5 },
+      { key: "maurerK", labelEn: "k", labelZh: "k 值", min: 2, max: 9, step: 1 },
+      { key: "maurerStep", labelEn: "Step", labelZh: "弦步", min: 7, max: 73, step: 1 },
+      { key: "maurerPulse", labelEn: "Pulse", labelZh: "呼吸量", min: 0, max: 6, step: 0.1 },
+    ],
+    formula(config) {
+      return [
+        `θ(t) = ${Math.round(config.maurerStep)}t`,
+        `r(t) = (${config.maurerRadius.toFixed(1)} + ${config.maurerPulse.toFixed(1)}s) sin(${Math.round(config.maurerK)}θ)`,
+        "x(t) = 50 + r(t) cos θ, y(t) = 50 + r(t) sin θ",
+      ].join("\n");
+    },
+    rotate: false,
+    particleCount: 96,
+    trailSpan: 0.26,
+    durationMs: 8200,
+    rotationDurationMs: 50000,
+    pulseDurationMs: 6200,
+    strokeWidth: 4.0,
+    point(progress, detailScale, config) {
+      const t = progress * Math.PI * 2;
+      const step = Math.round(config.maurerStep);
+      const k = Math.round(config.maurerK);
+      const theta = t * step;
+      const radius = (config.maurerRadius + detailScale * config.maurerPulse) * Math.sin(k * theta);
+      return {
+        x: 50 + radius * Math.cos(theta),
+        y: 50 + radius * Math.sin(theta),
+      };
+    },
+  },
+
 ];
 
 function normalizeProgress(progress) {
