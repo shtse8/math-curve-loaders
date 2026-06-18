@@ -26,6 +26,12 @@ https://shtse8.github.io/math-curve-loaders/
 
 The deployed demo is published from `main`, so merged improvements should become visible on the public URL quickly.
 
+## Performance architecture
+
+The live gallery is intentionally performance-first: it uses paginated browsing and skips hidden/offscreen card rendering so the browser does not animate every loader at once.
+
+The long-term renderer strategy is documented in [docs/performance-architecture.md](docs/performance-architecture.md). In short: JavaScript should own formulas, controls, metadata, and renderer orchestration; the hot rendering path should progressively move toward declarative CSS/SVG, Canvas, WebGL, and WebGPU where each makes sense.
+
 ## Project direction
 
 The goal is to make this the most impressive lightweight mathematical loader gallery on GitHub:
