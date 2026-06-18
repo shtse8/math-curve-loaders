@@ -224,6 +224,7 @@ body.modal-open {
 }
 
 .curve-frame {
+  position: relative;
   min-height: 180px;
   display: grid;
   place-items: center;
@@ -241,54 +242,12 @@ body.modal-open {
 }
 
 .curve-preview-path {
-  stroke-dasharray: 74 26;
-  animation: curve-trace 3.6s ease-in-out infinite;
   transition: opacity 180ms ease, stroke-width 180ms ease;
-}
-
-.curve-card.is-rotating .curve-svg {
-  animation: curve-card-spin 18s linear infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.curve-card:nth-child(3n) .curve-preview-path {
-  animation-duration: 4.4s;
-}
-
-.curve-card:nth-child(4n) .curve-svg {
-  animation-direction: reverse;
-  animation-duration: 24s;
 }
 
 .curve-card:hover .curve-preview-path,
 .curve-card.is-active .curve-preview-path {
   opacity: 0.78;
-}
-
-@keyframes curve-trace {
-  0% {
-    stroke-dashoffset: 0;
-  }
-  50% {
-    stroke-dashoffset: -48;
-  }
-  100% {
-    stroke-dashoffset: -100;
-  }
-}
-
-@keyframes curve-card-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .curve-preview-path,
-  .curve-card.is-rotating .curve-svg {
-    animation: none;
-  }
 }
 
 .curve-meta {
@@ -366,18 +325,13 @@ body.modal-open {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
   gap: 14px;
   opacity: 0;
-  transform-origin: top left;
-  transform:
-    translate(var(--viewer-translate-x, 0), var(--viewer-translate-y, 0))
-    scale(var(--viewer-scale, 0.92));
-  transition:
-    transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 220ms ease;
+  transform: translateY(10px) scale(0.98);
+  transition: transform 220ms ease, opacity 180ms ease;
 }
 
 .viewer-modal.is-open .viewer {
   opacity: 1;
-  transform: translate(0, 0) scale(1);
+  transform: translateY(0) scale(1);
 }
 
 .viewer-preview,
@@ -413,10 +367,12 @@ body.modal-open {
 .viewer-canvas {
   grid-area: 1 / 1;
   width: min(100%, 250px);
-  height: auto;
+  height: min(100%, 250px);
   aspect-ratio: 1;
   overflow: visible;
   flex-shrink: 0;
+  align-self: center;
+  justify-self: center;
 }
 
 .viewer-canvas {
