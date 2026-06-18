@@ -87,6 +87,12 @@ Move heavy formula sampling and particle simulation away from the main thread wh
 - `OffscreenCanvas` for Canvas rendering in supporting browsers
 - main thread owns UI and accessibility only
 
+## Implemented milestones
+
+- Gallery cards now use precomputed SVG path previews with lightweight declarative CSS/SVG motion instead of a gallery-wide JavaScript animation loop.
+- The focused modal viewer now uses a renderer abstraction with a Canvas 2D backend and an SVG fallback.
+- JavaScript still owns formulas, controls, export code, filtering, and renderer orchestration. The hot renderer is now replaceable.
+
 ## Near-term implementation plan
 
 1. **Keep pagination and viewport gating** for the gallery.
