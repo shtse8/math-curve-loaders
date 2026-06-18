@@ -30,6 +30,8 @@ let openAnimationFrame = 0;
 let currentLanguage = "en";
 const INITIAL_VISIBLE_COUNT = 24;
 const PAGE_SIZE = 24;
+const CARD_PREVIEW_DETAIL_SCALE = 0.82;
+const CARD_PREVIEW_STEPS = 240;
 let visibleLimit = INITIAL_VISIBLE_COUNT;
 let showAllLoaders = false;
 
@@ -2233,33 +2235,27 @@ function createCard(config) {
 
   const group = document.createElementNS(SVG_NS, "g");
   const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("class", "curve-preview-path");
   path.setAttribute("stroke", "currentColor");
   path.setAttribute("stroke-width", String(config.strokeWidth));
   path.setAttribute("stroke-linecap", "round");
   path.setAttribute("stroke-linejoin", "round");
-  path.setAttribute("opacity", "0.1");
+  path.setAttribute("opacity", "0.54");
+  path.setAttribute("d", buildPath(config, CARD_PREVIEW_DETAIL_SCALE, CARD_PREVIEW_STEPS));
 
   group.appendChild(path);
   svg.appendChild(group);
   frame.appendChild(svg);
-
-  const particles = Array.from({ length: config.particleCount }, (_, index) => {
-    const circle = document.createElementNS(SVG_NS, "circle");
-    circle.setAttribute("fill", getParticleColor(config, index));
-    group.appendChild(circle);
-    return circle;
-  });
   applyVisualStyle(group, path, config);
+  group.setAttribute("transform", `rotate(${config.rotate ? -18 : 0} 50 50)`);
 
   return {
     article,
     config,
     group,
     path,
-    particles,
     startTime: performance.now(),
     phaseOffset: Math.random(),
-    isInViewport: false,
   };
 }
 
@@ -2435,28 +2431,6 @@ const instances = curves.map((config) => {
   const instance = createCard(config);
   gallery.appendChild(instance.article);
   return instance;
-});
-
-const cardObserver = "IntersectionObserver" in window
-  ? new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const instance = instances.find((item) => item.article === entry.target);
-          if (instance) {
-            instance.isInViewport = entry.isIntersecting;
-          }
-        });
-      },
-      { rootMargin: "220px 0px" }
-    )
-  : null;
-
-instances.forEach((instance) => {
-  if (cardObserver) {
-    cardObserver.observe(instance.article);
-  } else {
-    instance.isInViewport = true;
-  }
 });
 
 const viewerParticles = Array.from({ length: 120 }, () => {
@@ -2798,6 +2772,7 @@ function setActiveInstance(instance) {
   viewerDesc.textContent = getDescription(instance.config);
   activeViewerConfig = createViewerConfig(instance.config);
   syncViewerMeta(activeViewerConfig);
+  startViewerLoop();
 
   instances.forEach((item) => {
     item.article.classList.toggle("is-active", item === instance);
@@ -2835,6 +2810,7 @@ function clearActiveInstance() {
   viewerCode.textContent = "";
   viewerPath.setAttribute("d", "");
   activeViewerConfig = null;
+  stopViewerLoop();
 }
 
 instances.forEach((instance) => {
@@ -2977,32 +2953,6 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-function renderInstance(instance, now) {
-  if (instance.article.hidden || !instance.isInViewport) {
-    return;
-  }
-
-  const time = now - instance.startTime;
-  const { config, group, path, particles, phaseOffset } = instance;
-  const progress =
-    ((time + phaseOffset * config.durationMs) % config.durationMs) / config.durationMs;
-  const detailScale = getDetailScale(time, config, phaseOffset);
-  const rotation = getRotation(time, config, phaseOffset);
-
-  group.setAttribute("transform", `rotate(${rotation} 50 50)`);
-  applyVisualStyle(group, path, config);
-  path.setAttribute("d", buildPath(config, detailScale));
-
-  particles.forEach((node, index) => {
-    const particle = getParticle(config, index, progress, detailScale);
-    node.setAttribute("fill", getParticleColor(config, index));
-    node.setAttribute("cx", particle.x.toFixed(2));
-    node.setAttribute("cy", particle.y.toFixed(2));
-    node.setAttribute("r", particle.radius.toFixed(2));
-    node.setAttribute("opacity", particle.opacity.toFixed(3));
-  });
-}
-
 function renderViewer(now) {
   if (!activeInstance) {
     return;
@@ -3035,14 +2985,26 @@ function renderViewer(now) {
   });
 }
 
+let viewerAnimationFrame = 0;
+
 function tick(now) {
-  instances.forEach((instance) => renderInstance(instance, now));
   renderViewer(now);
-  window.requestAnimationFrame(tick);
+  viewerAnimationFrame = activeInstance ? window.requestAnimationFrame(tick) : 0;
+}
+
+function startViewerLoop() {
+  if (!viewerAnimationFrame) {
+    viewerAnimationFrame = window.requestAnimationFrame(tick);
+  }
+}
+
+function stopViewerLoop() {
+  if (viewerAnimationFrame) {
+    window.cancelAnimationFrame(viewerAnimationFrame);
+    viewerAnimationFrame = 0;
+  }
 }
 
 createCategoryControls();
 applyCategoryFilter();
-instances.forEach((instance) => renderInstance(instance, performance.now()));
 applyLanguage();
-window.requestAnimationFrame(tick);
