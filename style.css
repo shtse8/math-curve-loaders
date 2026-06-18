@@ -234,11 +234,25 @@ body.modal-open {
     rgba(255, 255, 255, 0.01);
 }
 
-.curve-svg {
+.curve-svg,
+.curve-canvas {
+  grid-area: 1 / 1;
   width: 118px;
   height: 118px;
   overflow: visible;
   flex-shrink: 0;
+}
+
+.curve-canvas {
+  display: none;
+}
+
+.curve-frame.has-canvas .curve-canvas {
+  display: block;
+}
+
+.curve-frame.has-canvas .curve-svg {
+  display: none;
 }
 
 .curve-preview-path {
