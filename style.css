@@ -240,6 +240,15 @@ body.modal-open {
   flex-shrink: 0;
 }
 
+.curve-preview-path {
+  transition: opacity 180ms ease, stroke-width 180ms ease;
+}
+
+.curve-card:hover .curve-preview-path,
+.curve-card.is-active .curve-preview-path {
+  opacity: 0.78;
+}
+
 .curve-meta {
   display: flex;
   align-items: baseline;
