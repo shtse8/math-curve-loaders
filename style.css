@@ -142,6 +142,26 @@ body.modal-open {
   gap: 10px;
 }
 
+.gallery-window-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.gallery-window-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gallery-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .category-button {
   appearance: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -520,6 +540,26 @@ body.modal-open {
   gap: 10px;
 }
 
+.gallery-window-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.gallery-window-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gallery-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .category-button {
   appearance: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -565,5 +605,12 @@ body.modal-open {
 
   .curve-frame {
     min-height: 170px;
+  }
+}
+
+@media (max-width: 640px) {
+  .gallery-window-controls {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
