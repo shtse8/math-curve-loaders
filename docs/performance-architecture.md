@@ -92,9 +92,14 @@ Move heavy formula sampling and particle simulation away from the main thread wh
 - Gallery cards preserve the original curve-following particle motion, but only for the currently visible/viewport cards under a small live-animation budget instead of animating every loader at once.
 - Repeated path strings and particle color arrays are cached so motion parity is preserved while reducing per-frame work.
 - Gallery cards progressively render through Canvas 2D when available, removing per-particle SVG DOM updates while keeping SVG as fallback/export.
+- The public demo exposes FPS, frame time, active-card count, renderer backend, visible loader count, and animation budget as a live benchmark panel.
 - The focused modal viewer now uses a renderer abstraction with a Canvas 2D backend and an SVG fallback.
 - JavaScript still owns formulas, controls, export code, filtering, and renderer orchestration. The hot renderer is now replaceable.
 
+
+## Public benchmark panel
+
+The demo exposes live performance metrics directly in the UI: FPS, smoothed frame work time, number of active card animations, renderer backend, visible loader count, and the animation budget. This makes performance claims auditable by visitors instead of relying on README copy alone.
 
 ## Canvas card backend
 

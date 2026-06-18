@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Math Curve Loaders</title>
-    <link rel="stylesheet" href="./style.css?v=17" />
+    <link rel="stylesheet" href="./style.css?v=18" />
   </head>
   <body>
     <main class="page">
@@ -88,6 +88,38 @@
             <button id="show-all" class="category-button" type="button">Show all</button>
           </div>
         </div>
+        <section class="benchmark-panel" aria-label="Live performance benchmark">
+          <div>
+            <p id="benchmark-eyebrow" class="benchmark-eyebrow">Live benchmark</p>
+            <p id="benchmark-copy" class="benchmark-copy">Real-time FPS and frame budget for visible curve loaders.</p>
+          </div>
+          <dl class="benchmark-grid">
+            <div class="benchmark-stat">
+              <dt id="benchmark-fps-label">FPS</dt>
+              <dd id="benchmark-fps">--</dd>
+            </div>
+            <div class="benchmark-stat">
+              <dt id="benchmark-frame-label">Frame</dt>
+              <dd id="benchmark-frame">-- ms</dd>
+            </div>
+            <div class="benchmark-stat">
+              <dt id="benchmark-active-label">Active</dt>
+              <dd id="benchmark-active">0</dd>
+            </div>
+            <div class="benchmark-stat">
+              <dt id="benchmark-renderer-label">Renderer</dt>
+              <dd id="benchmark-renderer">Canvas</dd>
+            </div>
+            <div class="benchmark-stat">
+              <dt id="benchmark-visible-label">Visible</dt>
+              <dd id="benchmark-visible">0 / 0</dd>
+            </div>
+            <div class="benchmark-stat">
+              <dt id="benchmark-budget-label">Budget</dt>
+              <dd id="benchmark-budget">0</dd>
+            </div>
+          </dl>
+        </section>
       </section>
 
       <section class="showcase">
@@ -158,6 +190,6 @@
       </section>
     </div>
 
-    <script src="./main.js?v=17"></script>
+    <script src="./main.js?v=18"></script>
   </body>
 </html>
