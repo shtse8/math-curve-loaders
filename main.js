@@ -35,6 +35,7 @@ const INITIAL_VISIBLE_COUNT = 24;
 const PAGE_SIZE = 24;
 const CARD_PREVIEW_DETAIL_SCALE = 0.82;
 const CARD_PREVIEW_STEPS = 240;
+const MAX_LIVE_CARD_ANIMATIONS = 36;
 let visibleLimit = INITIAL_VISIBLE_COUNT;
 let showAllLoaders = false;
 
@@ -2214,7 +2215,7 @@ function normalizeProgress(progress) {
 
 function createCard(config) {
   const article = document.createElement("article");
-  article.className = "curve-card";
+  article.className = "curve-card has-motion";
   article.classList.toggle("is-rotating", Boolean(config.rotate));
   article.dataset.category = getCurveCategory(config);
   article.tabIndex = 0;
@@ -2245,22 +2246,30 @@ function createCard(config) {
   path.setAttribute("stroke-linecap", "round");
   path.setAttribute("stroke-linejoin", "round");
   path.setAttribute("pathLength", "100");
-  path.setAttribute("opacity", "0.54");
+  path.setAttribute("opacity", "0.1");
   path.setAttribute("d", buildPath(config, CARD_PREVIEW_DETAIL_SCALE, CARD_PREVIEW_STEPS));
 
   group.appendChild(path);
   svg.appendChild(group);
   frame.appendChild(svg);
+
+  const particles = Array.from({ length: config.particleCount }, (_, index) => {
+    const circle = document.createElementNS(SVG_NS, "circle");
+    circle.setAttribute("fill", getParticleColor(config, index));
+    group.appendChild(circle);
+    return circle;
+  });
   applyVisualStyle(group, path, config);
-  group.setAttribute("transform", `rotate(${config.rotate ? -18 : 0} 50 50)`);
 
   return {
     article,
     config,
     group,
     path,
+    particles,
     startTime: performance.now(),
     phaseOffset: Math.random(),
+    isInViewport: false,
   };
 }
 
@@ -2437,6 +2446,56 @@ const instances = curves.map((config) => {
   gallery.appendChild(instance.article);
   return instance;
 });
+
+const cardObserver = "IntersectionObserver" in window
+  ? new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const instance = instances.find((item) => item.article === entry.target);
+          if (instance) {
+            instance.isInViewport = entry.isIntersecting;
+          }
+        });
+      },
+      { rootMargin: "220px 0px" }
+    )
+  : null;
+
+instances.forEach((instance) => {
+  if (cardObserver) {
+    cardObserver.observe(instance.article);
+  } else {
+    instance.isInViewport = true;
+  }
+});
+
+function getLiveCardInstances() {
+  return instances
+    .filter((instance) => !instance.article.hidden && instance.isInViewport)
+    .slice(0, MAX_LIVE_CARD_ANIMATIONS);
+}
+
+function renderCardInstance(instance, now) {
+  const time = now - instance.startTime;
+  const { config, group, path, particles, phaseOffset } = instance;
+  const progress =
+    ((time + phaseOffset * config.durationMs) % config.durationMs) / config.durationMs;
+  const detailScale = getDetailScale(time, config, phaseOffset);
+  const rotation = getRotation(time, config, phaseOffset);
+
+  group.setAttribute("transform", `rotate(${rotation} 50 50)`);
+  applyVisualStyle(group, path, config);
+  path.setAttribute("d", buildPath(config, detailScale));
+
+  particles.forEach((node, index) => {
+    const particle = getParticle(config, index, progress, detailScale);
+    node.setAttribute("fill", getParticleColor(config, index));
+    node.setAttribute("cx", particle.x.toFixed(2));
+    node.setAttribute("cy", particle.y.toFixed(2));
+    node.setAttribute("r", particle.radius.toFixed(2));
+    node.setAttribute("opacity", particle.opacity.toFixed(3));
+  });
+}
 
 const viewerParticles = Array.from({ length: 120 }, () => {
   const circle = document.createElementNS(SVG_NS, "circle");
@@ -2883,18 +2942,9 @@ function setActiveInstance(instance) {
     cancelAnimationFrame(openAnimationFrame);
     openAnimationFrame = 0;
   }
-  const rect = instance.article.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const modalWidth = Math.min(1200, vw - 32);
-  const modalHeight = Math.min(vh - 32, vw <= 640 ? vh - 24 : vh - 32);
-  const targetLeft = (vw - modalWidth) / 2;
-  const targetTop = (vh - modalHeight) / 2;
-  const scaleX = Math.max(0.18, rect.width / modalWidth);
-  const scaleY = Math.max(0.18, rect.height / modalHeight);
-  viewer.style.setProperty("--viewer-translate-x", `${rect.left - targetLeft}px`);
-  viewer.style.setProperty("--viewer-translate-y", `${rect.top - targetTop}px`);
-  viewer.style.setProperty("--viewer-scale", `${Math.min(scaleX, scaleY)}`);
+  viewer.style.removeProperty("--viewer-translate-x");
+  viewer.style.removeProperty("--viewer-translate-y");
+  viewer.style.removeProperty("--viewer-scale");
   viewerModal.classList.remove("is-open");
   viewerModal.classList.add("is-entering");
   viewerModal.setAttribute("aria-hidden", "false");
@@ -3092,26 +3142,29 @@ function renderViewer(now) {
   viewerRenderer.render(getViewerFrame(activeInstance, now));
 }
 
-let viewerAnimationFrame = 0;
+let animationFrame = 0;
 
 function tick(now) {
+  getLiveCardInstances().forEach((instance) => renderCardInstance(instance, now));
   renderViewer(now);
-  viewerAnimationFrame = activeInstance ? window.requestAnimationFrame(tick) : 0;
+  animationFrame = window.requestAnimationFrame(tick);
 }
 
-function startViewerLoop() {
-  if (!viewerAnimationFrame) {
-    viewerAnimationFrame = window.requestAnimationFrame(tick);
+function startAnimationLoop() {
+  if (!animationFrame) {
+    animationFrame = window.requestAnimationFrame(tick);
   }
 }
 
 function stopViewerLoop() {
-  if (viewerAnimationFrame) {
-    window.cancelAnimationFrame(viewerAnimationFrame);
-    viewerAnimationFrame = 0;
-  }
+  // The gallery keeps the single animation loop alive; closing the modal only stops modal rendering.
+}
+
+function startViewerLoop() {
+  startAnimationLoop();
 }
 
 createCategoryControls();
 applyCategoryFilter();
 applyLanguage();
+startAnimationLoop();

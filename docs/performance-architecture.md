@@ -89,7 +89,7 @@ Move heavy formula sampling and particle simulation away from the main thread wh
 
 ## Implemented milestones
 
-- Gallery cards now use precomputed SVG path previews with lightweight declarative CSS/SVG motion instead of a gallery-wide JavaScript animation loop.
+- Gallery cards preserve the original curve-following particle motion, but only for the currently visible/viewport cards under a small live-animation budget instead of animating every loader at once.
 - The focused modal viewer now uses a renderer abstraction with a Canvas 2D backend and an SVG fallback.
 - JavaScript still owns formulas, controls, export code, filtering, and renderer orchestration. The hot renderer is now replaceable.
 
