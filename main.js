@@ -92,6 +92,33 @@ const VISUAL_DEFAULTS = {
   glow: 5,
 };
 
+const pathCache = new WeakMap();
+const particleColorCache = new WeakMap();
+
+function getVisualSignature(config) {
+  const visual = getVisualConfig(config);
+  return [
+    visual.hue,
+    visual.hueRange,
+    visual.saturation,
+    visual.lightness,
+    visual.glow,
+    config.particleCount ?? 0,
+  ].join(":");
+}
+
+function getParticleColors(config) {
+  const signature = getVisualSignature(config);
+  const cached = particleColorCache.get(config);
+  if (cached?.signature === signature) {
+    return cached.colors;
+  }
+
+  const colors = Array.from({ length: config.particleCount }, (_, index) => getParticleColor(config, index));
+  particleColorCache.set(config, { signature, colors });
+  return colors;
+}
+
 function getVisualConfig(config) {
   return {
     ...VISUAL_DEFAULTS,
@@ -2253,9 +2280,10 @@ function createCard(config) {
   svg.appendChild(group);
   frame.appendChild(svg);
 
+  const particleColors = getParticleColors(config);
   const particles = Array.from({ length: config.particleCount }, (_, index) => {
     const circle = document.createElementNS(SVG_NS, "circle");
-    circle.setAttribute("fill", getParticleColor(config, index));
+    circle.setAttribute("fill", particleColors[index]);
     group.appendChild(circle);
     return circle;
   });
@@ -2267,6 +2295,7 @@ function createCard(config) {
     group,
     path,
     particles,
+    particleColors,
     startTime: performance.now(),
     phaseOffset: Math.random(),
     isInViewport: false,
@@ -2405,6 +2434,26 @@ function buildPath(config, detailScale, steps = 480) {
   }).join(" ");
 }
 
+function buildCachedPath(config, detailScale, steps = 480) {
+  const quantizedScale = Math.round(detailScale * 240) / 240;
+  const key = `${steps}:${quantizedScale.toFixed(4)}`;
+  let cache = pathCache.get(config);
+
+  if (!cache) {
+    cache = new Map();
+    pathCache.set(config, cache);
+  }
+
+  if (!cache.has(key)) {
+    if (cache.size > 160) {
+      cache.clear();
+    }
+    cache.set(key, buildPath(config, quantizedScale, steps));
+  }
+
+  return cache.get(key);
+}
+
 function getParticle(config, index, progress, detailScale) {
   const tailOffset = index / (config.particleCount - 1);
   const point = config.point(
@@ -2477,19 +2526,18 @@ function getLiveCardInstances() {
 
 function renderCardInstance(instance, now) {
   const time = now - instance.startTime;
-  const { config, group, path, particles, phaseOffset } = instance;
+  const { config, group, path, particles, particleColors, phaseOffset } = instance;
   const progress =
     ((time + phaseOffset * config.durationMs) % config.durationMs) / config.durationMs;
   const detailScale = getDetailScale(time, config, phaseOffset);
   const rotation = getRotation(time, config, phaseOffset);
 
   group.setAttribute("transform", `rotate(${rotation} 50 50)`);
-  applyVisualStyle(group, path, config);
-  path.setAttribute("d", buildPath(config, detailScale));
+  path.setAttribute("d", buildCachedPath(config, detailScale));
 
   particles.forEach((node, index) => {
     const particle = getParticle(config, index, progress, detailScale);
-    node.setAttribute("fill", getParticleColor(config, index));
+    node.setAttribute("fill", particleColors[index]);
     node.setAttribute("cx", particle.x.toFixed(2));
     node.setAttribute("cy", particle.y.toFixed(2));
     node.setAttribute("r", particle.radius.toFixed(2));
@@ -2520,7 +2568,8 @@ function drawViewerSvgFrame(frame) {
   const { config, progress, detailScale, rotation } = frame;
   viewerGroup.setAttribute("transform", `rotate(${rotation} 50 50)`);
   applyVisualStyle(viewerGroup, viewerPath, config);
-  viewerPath.setAttribute("d", buildPath(config, detailScale));
+  viewerPath.setAttribute("d", buildCachedPath(config, detailScale));
+  const particleColors = getParticleColors(config);
 
   viewerParticles.forEach((node, index) => {
     if (index >= config.particleCount) {
@@ -2529,7 +2578,7 @@ function drawViewerSvgFrame(frame) {
     }
 
     const particle = getParticle(config, index, progress, detailScale);
-    node.setAttribute("fill", getParticleColor(config, index));
+    node.setAttribute("fill", particleColors[index]);
     node.setAttribute("cx", particle.x.toFixed(2));
     node.setAttribute("cy", particle.y.toFixed(2));
     node.setAttribute("r", (particle.radius * 1.35).toFixed(2));
@@ -2591,10 +2640,11 @@ function drawViewerCanvasFrame(frame) {
   drawCanvasPath(context, config, detailScale);
 
   context.shadowBlur = Math.max(visual.glow * 0.45, 0);
+  const particleColors = getParticleColors(config);
   for (let index = 0; index < config.particleCount; index += 1) {
     const particle = getParticle(config, index, progress, detailScale);
     context.beginPath();
-    context.fillStyle = getParticleColor(config, index);
+    context.fillStyle = particleColors[index];
     context.globalAlpha = Math.min(1, particle.opacity + 0.04);
     context.arc(particle.x, particle.y, particle.radius * 1.35, 0, Math.PI * 2);
     context.fill();

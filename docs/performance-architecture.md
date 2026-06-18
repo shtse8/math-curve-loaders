@@ -90,8 +90,22 @@ Move heavy formula sampling and particle simulation away from the main thread wh
 ## Implemented milestones
 
 - Gallery cards preserve the original curve-following particle motion, but only for the currently visible/viewport cards under a small live-animation budget instead of animating every loader at once.
+- Repeated path strings and particle color arrays are cached so motion parity is preserved while reducing per-frame work.
 - The focused modal viewer now uses a renderer abstraction with a Canvas 2D backend and an SVG fallback.
 - JavaScript still owns formulas, controls, export code, filtering, and renderer orchestration. The hot renderer is now replaceable.
+
+
+## Motion-parity optimization rules
+
+Optimization must not replace the original visual language with a weaker-looking substitute. When a card effect depends on particles following a mathematical curve, the optimized version should preserve that curve-following particle motion. Acceptable optimizations are:
+
+- animate only visible, paginated, viewport-intersecting cards
+- cap live card animations with a clear budget
+- cache quantized SVG path strings for repeated pulse states
+- cache per-loader particle colors instead of recomputing HSL strings every frame
+- move a matching renderer to Canvas/WebGL/WebGPU when it preserves the same motion
+
+CSS/SVG declarative animation is preferred only when it can match the intended motion closely; otherwise it should not replace the flagship effect.
 
 ## Near-term implementation plan
 
