@@ -2,6 +2,20 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const gallery = document.querySelector("#gallery");
 const categoryControls = document.querySelector("#category-controls");
 const galleryStatus = document.querySelector("#gallery-status");
+const benchmarkEyebrow = document.querySelector("#benchmark-eyebrow");
+const benchmarkCopy = document.querySelector("#benchmark-copy");
+const benchmarkFpsLabel = document.querySelector("#benchmark-fps-label");
+const benchmarkFrameLabel = document.querySelector("#benchmark-frame-label");
+const benchmarkActiveLabel = document.querySelector("#benchmark-active-label");
+const benchmarkRendererLabel = document.querySelector("#benchmark-renderer-label");
+const benchmarkVisibleLabel = document.querySelector("#benchmark-visible-label");
+const benchmarkBudgetLabel = document.querySelector("#benchmark-budget-label");
+const benchmarkFps = document.querySelector("#benchmark-fps");
+const benchmarkFrame = document.querySelector("#benchmark-frame");
+const benchmarkActive = document.querySelector("#benchmark-active");
+const benchmarkRenderer = document.querySelector("#benchmark-renderer");
+const benchmarkVisible = document.querySelector("#benchmark-visible");
+const benchmarkBudget = document.querySelector("#benchmark-budget");
 const loadMoreButton = document.querySelector("#load-more");
 const showAllButton = document.querySelector("#show-all");
 const viewerModal = document.querySelector("#viewer-modal");
@@ -37,6 +51,7 @@ const CARD_PREVIEW_DETAIL_SCALE = 0.82;
 const CARD_PREVIEW_STEPS = 240;
 const MAX_LIVE_CARD_ANIMATIONS = 36;
 const CARD_CANVAS_SIZE = 236;
+const BENCHMARK_UPDATE_INTERVAL_MS = 500;
 let visibleLimit = INITIAL_VISIBLE_COUNT;
 let showAllLoaders = false;
 
@@ -49,6 +64,16 @@ const UI_TEXT = {
     loadMore: "Load more",
     showAll: "Show all",
     galleryStatus: (shown, total) => `Showing ${shown} of ${total} loaders`,
+    benchmarkEyebrow: "Live benchmark",
+    benchmarkCopy: "Real-time FPS, frame budget, active loaders, and renderer backend.",
+    benchmarkFps: "FPS",
+    benchmarkFrame: "Frame",
+    benchmarkActive: "Active",
+    benchmarkRenderer: "Renderer",
+    benchmarkVisible: "Visible",
+    benchmarkBudget: "Budget",
+    rendererCanvas: "Canvas 2D cards",
+    rendererSvg: "SVG fallback",
     controls: "Controls",
     formula: "Formula",
     code: "Code",
@@ -70,6 +95,16 @@ const UI_TEXT = {
     loadMore: "加载更多",
     showAll: "显示全部",
     galleryStatus: (shown, total) => `正在显示 ${shown} / ${total} 个加载器`,
+    benchmarkEyebrow: "实时基准",
+    benchmarkCopy: "实时显示 FPS、帧预算、运行中的加载器数量与渲染后端。",
+    benchmarkFps: "FPS",
+    benchmarkFrame: "帧耗时",
+    benchmarkActive: "运行中",
+    benchmarkRenderer: "渲染器",
+    benchmarkVisible: "显示中",
+    benchmarkBudget: "预算",
+    rendererCanvas: "Canvas 2D 卡片",
+    rendererSvg: "SVG fallback",
     controls: "配置项",
     formula: "公式",
     code: "代码",
@@ -2333,6 +2368,14 @@ function applyLanguage() {
   viewerFormulaLabel.textContent = ui.formula;
   viewerCodeLabel.textContent = ui.code;
   viewerDownload.textContent = ui.download;
+  benchmarkEyebrow.textContent = ui.benchmarkEyebrow;
+  benchmarkCopy.textContent = ui.benchmarkCopy;
+  benchmarkFpsLabel.textContent = ui.benchmarkFps;
+  benchmarkFrameLabel.textContent = ui.benchmarkFrame;
+  benchmarkActiveLabel.textContent = ui.benchmarkActive;
+  benchmarkRendererLabel.textContent = ui.benchmarkRenderer;
+  benchmarkVisibleLabel.textContent = ui.benchmarkVisible;
+  benchmarkBudgetLabel.textContent = ui.benchmarkBudget;
   viewerReset.textContent = ui.reset;
   viewerCopy.textContent = ui.copy;
   viewerClose.textContent = ui.close;
@@ -3215,11 +3258,52 @@ function renderViewer(now) {
   viewerRenderer.render(getViewerFrame(activeInstance, now));
 }
 
+const benchmarkState = {
+  lastTimestamp: 0,
+  lastUiUpdate: 0,
+  fpsAverage: 0,
+  frameMsAverage: 0,
+};
+
+function getRendererBenchmarkLabel() {
+  const ui = UI_TEXT[currentLanguage];
+  return instances.some((instance) => instance.canvasContext) ? ui.rendererCanvas : ui.rendererSvg;
+}
+
+function updateBenchmark(now, frameMs, activeCount) {
+  const delta = benchmarkState.lastTimestamp > 0 ? now - benchmarkState.lastTimestamp : 16.67;
+  const fps = delta > 0 ? 1000 / delta : 0;
+  benchmarkState.lastTimestamp = now;
+  benchmarkState.fpsAverage = benchmarkState.fpsAverage
+    ? benchmarkState.fpsAverage * 0.9 + fps * 0.1
+    : fps;
+  benchmarkState.frameMsAverage = benchmarkState.frameMsAverage
+    ? benchmarkState.frameMsAverage * 0.86 + frameMs * 0.14
+    : frameMs;
+
+  if (now - benchmarkState.lastUiUpdate < BENCHMARK_UPDATE_INTERVAL_MS) {
+    return;
+  }
+
+  const shownCount = instances.filter((instance) => !instance.article.hidden).length;
+  const filteredCount = getFilteredInstances().length;
+  benchmarkFps.textContent = `${Math.round(benchmarkState.fpsAverage)}`;
+  benchmarkFrame.textContent = `${benchmarkState.frameMsAverage.toFixed(1)} ms`;
+  benchmarkActive.textContent = `${activeCount}`;
+  benchmarkRenderer.textContent = getRendererBenchmarkLabel();
+  benchmarkVisible.textContent = `${shownCount} / ${filteredCount}`;
+  benchmarkBudget.textContent = `${MAX_LIVE_CARD_ANIMATIONS}`;
+  benchmarkState.lastUiUpdate = now;
+}
+
 let animationFrame = 0;
 
 function tick(now) {
-  getLiveCardInstances().forEach((instance) => renderCardInstance(instance, now));
+  const frameStart = performance.now();
+  const liveCardInstances = getLiveCardInstances();
+  liveCardInstances.forEach((instance) => renderCardInstance(instance, now));
   renderViewer(now);
+  updateBenchmark(now, performance.now() - frameStart, liveCardInstances.length);
   animationFrame = window.requestAnimationFrame(tick);
 }
 

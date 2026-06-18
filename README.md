@@ -12,6 +12,7 @@ This fork is evolving into a larger, more polished mainline gallery: more formul
 - curve families and generated preset waves such as rose curves, Lissajous curves, hypotrochoids, spirals, heart curves, Fourier braids, polar waves, epicycloids, astroids, superellipses, projected knots, cardioids, infinity curves, shell spirals, superformula stars, nephroids, Maurer-style rose chords, and Fourier-style paths
 - category filters for originals, roses, spirographs, spirals, hearts, harmonic paths, and advanced geometry
 - performance-first paginated demo browsing so the page does not animate every spinner at once
+- live benchmark panel with FPS, frame time, active animation count, renderer backend, visible loaders, and animation budget
 - click-to-open modal previews with live controls
 - per-curve formula notes and standalone HTML code snippets
 - copy support for formula and code
@@ -28,7 +29,7 @@ The deployed demo is published from `main`, so merged improvements should become
 
 ## Performance architecture
 
-The live gallery is intentionally performance-first: it uses paginated browsing and skips hidden/offscreen card rendering so the browser does not animate every loader at once.
+The live gallery is intentionally performance-first: it uses paginated browsing, skips hidden/offscreen card rendering, and exposes live FPS/frame-time metrics so visitors can judge performance directly.
 
 The long-term renderer strategy is documented in [docs/performance-architecture.md](docs/performance-architecture.md). In short: JavaScript should own formulas, controls, metadata, and renderer orchestration; the hot rendering path should progressively move toward declarative CSS/SVG, Canvas, WebGL, and WebGPU where each makes sense.
 
