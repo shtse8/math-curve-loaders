@@ -241,12 +241,54 @@ body.modal-open {
 }
 
 .curve-preview-path {
+  stroke-dasharray: 74 26;
+  animation: curve-trace 3.6s ease-in-out infinite;
   transition: opacity 180ms ease, stroke-width 180ms ease;
+}
+
+.curve-card.is-rotating .curve-svg {
+  animation: curve-card-spin 18s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.curve-card:nth-child(3n) .curve-preview-path {
+  animation-duration: 4.4s;
+}
+
+.curve-card:nth-child(4n) .curve-svg {
+  animation-direction: reverse;
+  animation-duration: 24s;
 }
 
 .curve-card:hover .curve-preview-path,
 .curve-card.is-active .curve-preview-path {
   opacity: 0.78;
+}
+
+@keyframes curve-trace {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dashoffset: -48;
+  }
+  100% {
+    stroke-dashoffset: -100;
+  }
+}
+
+@keyframes curve-card-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curve-preview-path,
+  .curve-card.is-rotating .curve-svg {
+    animation: none;
+  }
 }
 
 .curve-meta {
@@ -357,6 +399,7 @@ body.modal-open {
 }
 
 .viewer-stage {
+  position: relative;
   min-height: 320px;
   display: grid;
   place-items: center;
@@ -366,12 +409,26 @@ body.modal-open {
     rgba(255, 255, 255, 0.01);
 }
 
-.viewer-svg {
+.viewer-svg,
+.viewer-canvas {
+  grid-area: 1 / 1;
   width: min(100%, 250px);
   height: auto;
   aspect-ratio: 1;
   overflow: visible;
   flex-shrink: 0;
+}
+
+.viewer-canvas {
+  display: none;
+}
+
+.viewer-stage.has-canvas .viewer-canvas {
+  display: block;
+}
+
+.viewer-stage.has-canvas .viewer-svg {
+  display: none;
 }
 
 .viewer-copy {

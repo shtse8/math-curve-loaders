@@ -7,6 +7,9 @@ const showAllButton = document.querySelector("#show-all");
 const viewerModal = document.querySelector("#viewer-modal");
 const viewerBackdrop = document.querySelector("#viewer-backdrop");
 const viewer = document.querySelector("#viewer");
+const viewerStage = document.querySelector(".viewer-stage");
+const viewerCanvas = document.querySelector("#viewer-canvas");
+const viewerCanvasContext = viewerCanvas instanceof HTMLCanvasElement ? viewerCanvas.getContext("2d") : null;
 const viewerGroup = document.querySelector("#viewer-group");
 const viewerPath = document.querySelector("#viewer-path");
 const viewerTitle = document.querySelector("#viewer-title");
@@ -2212,6 +2215,7 @@ function normalizeProgress(progress) {
 function createCard(config) {
   const article = document.createElement("article");
   article.className = "curve-card";
+  article.classList.toggle("is-rotating", Boolean(config.rotate));
   article.dataset.category = getCurveCategory(config);
   article.tabIndex = 0;
   article.setAttribute("role", "button");
@@ -2240,6 +2244,7 @@ function createCard(config) {
   path.setAttribute("stroke-width", String(config.strokeWidth));
   path.setAttribute("stroke-linecap", "round");
   path.setAttribute("stroke-linejoin", "round");
+  path.setAttribute("pathLength", "100");
   path.setAttribute("opacity", "0.54");
   path.setAttribute("d", buildPath(config, CARD_PREVIEW_DETAIL_SCALE, CARD_PREVIEW_STEPS));
 
@@ -2439,6 +2444,132 @@ const viewerParticles = Array.from({ length: 120 }, () => {
   viewerGroup.appendChild(circle);
   return circle;
 });
+
+function getViewerFrame(instance, now) {
+  const time = now - instance.startTime;
+  const { phaseOffset } = instance;
+  const config = activeViewerConfig ?? instance.config;
+  const progress =
+    ((time + phaseOffset * config.durationMs) % config.durationMs) / config.durationMs;
+  const detailScale = getDetailScale(time, config, phaseOffset);
+  const rotation = getRotation(time, config, phaseOffset);
+
+  return { config, progress, detailScale, rotation };
+}
+
+function drawViewerSvgFrame(frame) {
+  const { config, progress, detailScale, rotation } = frame;
+  viewerGroup.setAttribute("transform", `rotate(${rotation} 50 50)`);
+  applyVisualStyle(viewerGroup, viewerPath, config);
+  viewerPath.setAttribute("d", buildPath(config, detailScale));
+
+  viewerParticles.forEach((node, index) => {
+    if (index >= config.particleCount) {
+      node.setAttribute("opacity", "0");
+      return;
+    }
+
+    const particle = getParticle(config, index, progress, detailScale);
+    node.setAttribute("fill", getParticleColor(config, index));
+    node.setAttribute("cx", particle.x.toFixed(2));
+    node.setAttribute("cy", particle.y.toFixed(2));
+    node.setAttribute("r", (particle.radius * 1.35).toFixed(2));
+    node.setAttribute("opacity", Math.min(1, particle.opacity + 0.04).toFixed(3));
+  });
+}
+
+function syncViewerCanvasSize(canvas, context) {
+  const rect = canvas.getBoundingClientRect();
+  const ratio = Math.min(2, window.devicePixelRatio || 1);
+  const width = Math.max(1, Math.round(rect.width * ratio));
+  const height = Math.max(1, Math.round(rect.height * ratio));
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  context.setTransform(width / 100, 0, 0, height / 100, 0, 0);
+  context.clearRect(0, 0, 100, 100);
+}
+
+function drawCanvasPath(context, config, detailScale) {
+  const steps = 480;
+  context.beginPath();
+  for (let index = 0; index <= steps; index += 1) {
+    const point = config.point(index / steps, detailScale, config);
+    if (index === 0) {
+      context.moveTo(point.x, point.y);
+    } else {
+      context.lineTo(point.x, point.y);
+    }
+  }
+  context.stroke();
+}
+
+function drawViewerCanvasFrame(frame) {
+  if (!viewerCanvas || !viewerCanvasContext) {
+    drawViewerSvgFrame(frame);
+    return;
+  }
+
+  const { config, progress, detailScale, rotation } = frame;
+  const visual = getVisualConfig(config);
+  const context = viewerCanvasContext;
+  syncViewerCanvasSize(viewerCanvas, context);
+
+  context.save();
+  context.translate(50, 50);
+  context.rotate((rotation * Math.PI) / 180);
+  context.translate(-50, -50);
+  context.lineWidth = config.strokeWidth;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.strokeStyle = getHslColor(visual, visual.hueRange * 0.16);
+  context.globalAlpha = 0.28;
+  context.shadowBlur = visual.glow;
+  context.shadowColor = getHslColor(visual, visual.hueRange * 0.45, 0.52);
+  drawCanvasPath(context, config, detailScale);
+
+  context.shadowBlur = Math.max(visual.glow * 0.45, 0);
+  for (let index = 0; index < config.particleCount; index += 1) {
+    const particle = getParticle(config, index, progress, detailScale);
+    context.beginPath();
+    context.fillStyle = getParticleColor(config, index);
+    context.globalAlpha = Math.min(1, particle.opacity + 0.04);
+    context.arc(particle.x, particle.y, particle.radius * 1.35, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
+  context.globalAlpha = 1;
+}
+
+const viewerRenderer = viewerCanvasContext
+  ? {
+      id: "canvas2d",
+      mount() {
+        viewerStage?.classList.add("has-canvas");
+      },
+      clear() {
+        if (viewerCanvas && viewerCanvasContext) {
+          syncViewerCanvasSize(viewerCanvas, viewerCanvasContext);
+        }
+      },
+      render: drawViewerCanvasFrame,
+    }
+  : {
+      id: "svg",
+      mount() {
+        viewerStage?.classList.remove("has-canvas");
+      },
+      clear() {
+        viewerPath.setAttribute("d", "");
+        viewerParticles.forEach((node) => node.setAttribute("opacity", "0"));
+      },
+      render: drawViewerSvgFrame,
+    };
+
+viewerRenderer.mount();
 
 let activeInstance = null;
 let activeViewerConfig = null;
@@ -2808,7 +2939,7 @@ function clearActiveInstance() {
   viewerControls.innerHTML = "";
   viewerFormula.textContent = "";
   viewerCode.textContent = "";
-  viewerPath.setAttribute("d", "");
+  viewerRenderer.clear();
   activeViewerConfig = null;
   stopViewerLoop();
 }
@@ -2958,31 +3089,7 @@ function renderViewer(now) {
     return;
   }
 
-  const time = now - activeInstance.startTime;
-  const { phaseOffset } = activeInstance;
-  const config = activeViewerConfig ?? activeInstance.config;
-  const progress =
-    ((time + phaseOffset * config.durationMs) % config.durationMs) / config.durationMs;
-  const detailScale = getDetailScale(time, config, phaseOffset);
-  const rotation = getRotation(time, config, phaseOffset);
-
-  viewerGroup.setAttribute("transform", `rotate(${rotation} 50 50)`);
-  applyVisualStyle(viewerGroup, viewerPath, config);
-  viewerPath.setAttribute("d", buildPath(config, detailScale));
-
-  viewerParticles.forEach((node, index) => {
-    if (index >= config.particleCount) {
-      node.setAttribute("opacity", "0");
-      return;
-    }
-
-    const particle = getParticle(config, index, progress, detailScale);
-    node.setAttribute("fill", getParticleColor(config, index));
-    node.setAttribute("cx", particle.x.toFixed(2));
-    node.setAttribute("cy", particle.y.toFixed(2));
-    node.setAttribute("r", (particle.radius * 1.35).toFixed(2));
-    node.setAttribute("opacity", Math.min(1, particle.opacity + 0.04).toFixed(3));
-  });
+  viewerRenderer.render(getViewerFrame(activeInstance, now));
 }
 
 let viewerAnimationFrame = 0;
